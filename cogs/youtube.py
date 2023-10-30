@@ -23,9 +23,7 @@ class Youtube(commands.Cog):
 
     @tasks.loop(seconds=10)
     async def upload_check(self):
-        videos = scrapetube.get_channel(
-            channel_url="https://www.youtube.com/c/Toonpishcrafts", limit=1
-        )
+        videos = scrapetube.get_channel(channel_url=str(os.getenv("YOUTUBE")), limit=1)
         latest_video = videos.send(None)
         if self.latest_video != latest_video["videoId"]:
             print("New youtube upload detected, getting thumbnail and link now")
@@ -50,7 +48,7 @@ class Youtube(commands.Cog):
             int(os.getenv("CHANNEL"))
         )
         embed = embed_gen("youtube")
-        await channel.send("<@164862382185644032>", embed=embed)
+        await channel.send(f"<@{os.getenv('OWNER')}>", embed=embed)
 
     @upload_check.before_loop
     async def before_upload_check(self):
