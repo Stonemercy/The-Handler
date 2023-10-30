@@ -29,6 +29,27 @@ def embed_gen(embed_type: str):
             colour=disnake.Colour.lighter_grey(),
         )
         return embed
+    elif embed_type == "alert":
+        embed = disnake.Embed(
+            title="Watch out, partner!",
+            description="There's a weather warning!",
+            colour=disnake.Colour.brand_red(),
+        )
+        return embed
+    elif embed_type == "MHNow":
+        embed = disnake.Embed(
+            title="Woah!",
+            description="The local monsters have migrated!\nTime to cash in on the new population!",
+            colour=disnake.Colour.green(),
+        )
+        return embed
+    elif embed_type == "youtube":
+        embed = disnake.Embed(
+            title="ToonpishCrafts has uploaded a new video",
+            description="The url and thumbnail have been downloaded and stored (I need to find a way to upload them)",
+            colour=disnake.Colour.green(),
+        )
+        return embed
 
 
 def modal_gen(modal_type: str):

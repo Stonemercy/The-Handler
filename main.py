@@ -1,9 +1,7 @@
 import os
 import sqlite3
-import scrapetube
-from datetime import datetime
 from helpers.generators import embed_gen, WeatherEmojis
-from disnake.ext import commands, tasks
+from disnake.ext import commands
 from dotenv import load_dotenv
 import logging
 
@@ -31,6 +29,7 @@ cur = con.cursor()
 cur.execute(
     "CREATE TABLE IF NOT EXISTS events(date_and_time timestamp, name text unique, description text)"
 )
+cur.execute("CREATE TABLE IF NOT EXISTS youtube(video_id)")
 con.commit()
 
 # load cogs
@@ -43,17 +42,6 @@ async def on_ready():
     print("===============================")
     print(f"{bot.user.name} is awake and ready for action!")
     print("===============================")
-
-
-@tasks.loop(minutes=1)
-async def youtube_scraper():
-    latest_video = scrapetube.get_channel(channel_username="Toonpishcrafts")
-    print(f"latest video: {latest_video}")
-
-
-@youtube_scraper.before_loop
-async def before_weather_info():
-    await bot.wait_until_ready()
 
 
 # runs the bot with token

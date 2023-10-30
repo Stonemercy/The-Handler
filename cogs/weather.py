@@ -1,3 +1,5 @@
+import asyncio
+import random
 from disnake.ext import commands, tasks
 from helpers.generators import embed_gen
 from datetime import datetime
@@ -6,6 +8,7 @@ from helpers.generators import WeatherEmojis
 import os
 
 # sets up the weather stuffs
+# pyOWM docs: https://pyowm.readthedocs.io/en/latest/index.html
 API_KEY = str(os.getenv("API_KEY"))
 HOME_LAT = float(os.getenv("HOME_LAT"))
 HOME_LON = float(os.getenv("HOME_LON"))
@@ -22,35 +25,76 @@ class Weather(commands.Cog):
     def cog_load(self):
         print("Weather cog has finished loading")
 
+    def cog_unload(self):
+        self.weather_info.stop()
+
     @tasks.loop(minutes=1)
     async def weather_info(self):
         now = datetime.now()
-        """if now.minute != 0:
-            return"""
+        if now.minute != 0:
+            return
         channel = self.bot.get_guild(int(os.getenv("GUILD"))).get_channel(
             int(os.getenv("CHANNEL"))
         )
+        embeds = []
         embed = embed_gen("weather")
+        random_num = random.random() * 10000
+        if random_num == 1000:
+            embed.set_image(
+                "https://media0.giphy.com/media/J5q4qtKqQ4plPl4YJN/giphy.gif"
+            )
+            m_one = await channel.send(embed=embed)
+            await asyncio.sleep(2)
+            m_two = await channel.send("lol jk")
+            await asyncio.sleep(2)
+            await channel.delete_messages([m_one, m_two])
+            embed.set_image("")
         weather_call = weather_mgr.one_call(
             lat=HOME_LAT, lon=HOME_LON, exclude="minutely"
         )
+        alerts = weather_call.national_weather_alerts
+        current = weather_call.current
         hourly = weather_call.forecast_hourly[0:6]
+        if alerts != []:
+            for i in alerts:
+                alert_embed = embed_gen("alert")
+                alert_embed.add_field("Alert from:", i.sender, inline=False).add_field(
+                    "Alert name:", i.title, inline=False
+                ).add_field("Time start:", i.start).add_field(
+                    "Time end:", i.end
+                ).add_field(
+                    "Description:", i.description, inline=False
+                )
+            embeds.append(alert_embed)
+        embed.add_field(
+            "Sunrise:",
+            datetime.fromisoformat(current.sunrise_time(timeformat="iso")).strftime(
+                "%H:%M"
+            ),
+        ).add_field(
+            "Sunset:",
+            datetime.fromisoformat(current.sunset_time(timeformat="iso")).strftime(
+                "%H:%M"
+            ),
+        )
         for hour in hourly:
             time = datetime.fromisoformat(
                 str(hour.reference_time(timeformat="iso"))
             ).strftime("%H:%M")
             emoji = WeatherEmojis(hour.status)
-            temp = hour.temperature("celsius")["temp"]
-            feels_like = hour.temperature("celsius")["feels_like"]
-            humidity = hour.humidity
-            windspeed = hour.wind()["speed"]
             embed.add_field(
                 f"{time} - {hour.detailed_status.title()} {emoji}",
-                f"Temp: {temp:.0f}°\nFeels like: {feels_like:.0f}°\nHumidity: {humidity}%\nWindspeed: {windspeed:.0f}mph",
+                f"Temp: {hour.temperature('celsius')['temp']:.0f}°\n"
+                f"Feels like: {hour.temperature('celsius')['feels_like']:.0f}°\n"
+                f"Humidity: {hour.humidity}%\n"
+                f"Precipitation: {hour.precipitation_probability:.0%}\n"
+                f"Windspeed: {hour.wind()['speed']:.0f}mph\n"
+                f"Cloud coverage: {hour.clouds:}%\n"
+                f"UV Index: {hour.uvi}",
                 inline=False,
             )
-
-        await channel.send(embed=embed)
+        embeds.append(embed)
+        await channel.send(embeds=embeds)
 
     @weather_info.before_loop
     async def before_weather_info(self):

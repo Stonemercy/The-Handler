@@ -23,6 +23,9 @@ class EventsCommand(commands.Cog):
     def cog_load(self):
         print("Events cog has finished loading")
 
+    def cog_unload(self):
+        self.event_ping.stop()
+
     @tasks.loop(minutes=1)
     async def event_ping(self):
         owner_user = await self.bot.fetch_user(int(os.getenv("OWNER")))

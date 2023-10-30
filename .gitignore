@@ -1,2 +1,7 @@
 
 .env
+*.db
+*.log
+youtube/link.txt
+youtube/thumbnail.jpg
+database.db
