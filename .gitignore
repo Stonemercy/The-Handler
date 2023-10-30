@@ -4,4 +4,4 @@
 *.log
 youtube/link.txt
 youtube/thumbnail.jpg
-database.db
+__pycache__/
