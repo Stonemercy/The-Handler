@@ -1,15 +1,18 @@
-import asyncio, random, os, disnake
 from disnake.ext import commands, tasks
 from helpers.generators import Embeds
 from datetime import datetime
 from pyowm.owm import OWM
 from helpers.generators import WeatherEmojis
+from os import getenv
+from random import random
+from asyncio import sleep
+from disnake import AppCmdInter
 
 # sets up the weather stuffs
 # pyOWM docs: https://pyowm.readthedocs.io/en/latest/index.html
-API_KEY = str(os.getenv("API_KEY"))
-HOME_LAT = float(os.getenv("HOME_LAT"))
-HOME_LON = float(os.getenv("HOME_LON"))
+API_KEY = str(getenv("API_KEY"))
+HOME_LAT = float(getenv("HOME_LAT"))
+HOME_LON = float(getenv("HOME_LON"))
 owm = OWM(API_KEY)
 weather_mgr = owm.weather_manager()
 
@@ -31,20 +34,20 @@ class Weather(commands.Cog):
         now = datetime.now()
         if now.minute != 0 or now.hour not in range(6, 9, 12, 15, 18):
             return
-        channel = self.bot.get_guild(int(os.getenv("GUILD"))).get_channel(
-            int(os.getenv("CHANNEL"))
+        channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
+            int(getenv("CHANNEL"))
         )
         embeds = []
         embed = Embeds.weather()
-        random_num = random.random() * 10000
-        if random_num == 1000:
+        random_num = random() * 10000
+        if random_num == 10000:
             embed.set_image(
                 "https://media0.giphy.com/media/J5q4qtKqQ4plPl4YJN/giphy.gif"
             )
             m_one = await channel.send(embed=embed)
-            await asyncio.sleep(2)
+            await sleep(2)
             m_two = await channel.send("lol jk")
-            await asyncio.sleep(2)
+            await sleep(2)
             await channel.delete_messages([m_one, m_two])
             embed.set_image("")
         weather_call = weather_mgr.one_call(
@@ -99,7 +102,7 @@ class Weather(commands.Cog):
         await self.bot.wait_until_ready()
 
     @commands.slash_command(description="Get the next 3 hours of weather")
-    async def weather(self, inter: disnake.ApplicationCommandInteraction):
+    async def weather(self, inter: AppCmdInter):
         embed = Embeds.weather()
         embeds = []
         weather_call = weather_mgr.one_call(

@@ -1,7 +1,11 @@
-import requests, shutil, os, googleapiclient.discovery, datetime
 from disnake.ext import commands, tasks
 from helpers.generators import Embeds
 from main import cur, con
+from datetime import datetime
+from googleapiclient import discovery
+from os import getenv
+from requests import get
+from shutil import copyfileobj, move
 
 
 # the entire cog for the YouTube function
@@ -18,13 +22,11 @@ class Youtube(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def upload_check(self):
-        now = datetime.datetime.now()
+        now = datetime.now()
         if now.minute not in [0, 15, 30, 45]:
             return
 
-        youtube = googleapiclient.discovery.build(
-            "youtube", "v3", developerKey=os.getenv("YOUTUBE_KEY")
-        )
+        youtube = discovery.build("youtube", "v3", developerKey=getenv("YOUTUBE_KEY"))
 
         latest_video = (
             youtube.playlistItems()
@@ -40,9 +42,7 @@ class Youtube(commands.Cog):
         launch_time = (
             youtube.videos().list(part="liveStreamingDetails", id=video_id).execute()
         )["items"][0]["liveStreamingDetails"]["scheduledStartTime"]
-        launch_from_iso = datetime.datetime.fromisoformat(launch_time).strftime(
-            "%Y-%m-%d"
-        )
+        launch_from_iso = datetime.fromisoformat(launch_time).strftime("%Y-%m-%d")
         if self.latest_video != video_id:
             print("New youtube upload detected, getting thumbnail and link now")
             cur.execute("Delete from youtube")
@@ -50,24 +50,24 @@ class Youtube(commands.Cog):
             con.commit()
             thumbnail = latest_video["snippet"]["thumbnails"]["maxres"]["url"]
             thumbnail_name = launch_from_iso
-            res = requests.get(thumbnail, stream=True)
+            res = get(thumbnail, stream=True)
             if res.status_code == 200:
                 with open(f"{thumbnail_name}.jpg", "wb") as f:
-                    shutil.copyfileobj(res.raw, f)
-                shutil.move(f"{thumbnail_name}.jpg", f"youtube/{thumbnail_name}.jpg")
+                    copyfileobj(res.raw, f)
+                move(f"{thumbnail_name}.jpg", f"youtube/{thumbnail_name}.jpg")
                 url_file = open("youtube/link.txt", "w")
                 url_file.write(f"https://www.youtube.com/watch?v={self.latest_video}")
                 url_file.close()
             else:
                 return
 
-            channel = self.bot.get_guild(int(os.getenv("GUILD"))).get_channel(
-                int(os.getenv("CHANNEL"))
+            channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
+                int(getenv("CHANNEL"))
             )
             embed = Embeds.youtube()
             embed.add_field(f"Video title: {latest_video['snippet']['title']}", "")
             embed.set_image(thumbnail)
-            await channel.send(f"<@{os.getenv('OWNER')}>", embed=embed)
+            await channel.send(f"<@{getenv('OWNER')}>", embed=embed)
             # youtube.close()
 
     @upload_check.before_loop

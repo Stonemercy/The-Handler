@@ -1,9 +1,9 @@
-import disnake
+from disnake import AppCmdInter, ModalInteraction
 from disnake.ext import commands, tasks
 from helpers.generators import modal_gen, Embeds
 from main import con, cur
 from datetime import datetime, timedelta
-import os
+from os import getenv
 
 
 # the entire cog for the invasions command
@@ -60,8 +60,8 @@ class EventsCommand(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def event_check(self):
-        self.channel = self.bot.get_guild(int(os.getenv("GUILD"))).get_channel(
-            int(os.getenv("CHANNEL"))
+        self.channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
+            int(getenv("CHANNEL"))
         )
         now = datetime.now()
         all_events = cur.execute("select * from events").fetchall()
@@ -77,12 +77,12 @@ class EventsCommand(commands.Cog):
 
     # events parent command (does nothing)
     @commands.slash_command()
-    async def events(self, inter: disnake.ApplicationCommandInteraction):
+    async def events(self, inter: AppCmdInter):
         pass
 
     # events list subcommand
     @events.sub_command(description="List events")
-    async def list(self, inter: disnake.ApplicationCommandInteraction):
+    async def list(self, inter: AppCmdInter):
         embed = Embeds.list()
         events_in_db = cur.execute(
             "select * from events order by date_and_time asc"
@@ -102,7 +102,7 @@ class EventsCommand(commands.Cog):
 
     # event report subcommand
     @events.sub_command(description="Report an event")
-    async def report(inter: disnake.AppCmdInter):
+    async def report(inter: AppCmdInter):
         """Submit an event"""
 
         modal = modal_gen("event")
@@ -111,7 +111,7 @@ class EventsCommand(commands.Cog):
 
     # listener for event modal
     @commands.Cog.listener("on_modal_submit")
-    async def event_listener(self, inter: disnake.ModalInteraction):
+    async def event_listener(self, inter: ModalInteraction):
         if inter.custom_id != "event_modal":
             return
         else:

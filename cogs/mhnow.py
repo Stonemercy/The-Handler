@@ -1,7 +1,7 @@
 from disnake.ext import commands, tasks
 from helpers.generators import Embeds
 from datetime import datetime
-import os
+from os import getenv
 
 
 # the entire cog for the MHNow function
@@ -21,8 +21,8 @@ class MHNow(commands.Cog):
         now = datetime.now()
         if now.minute != 0 or now.hour not in [1, 4, 7, 10]:
             return
-        channel = self.bot.get_guild(int(os.getenv("GUILD"))).get_channel(
-            int(os.getenv("CHANNEL"))
+        channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
+            int(getenv("CHANNEL"))
         )
         embed = Embeds.mhnow()
         embed.set_image(

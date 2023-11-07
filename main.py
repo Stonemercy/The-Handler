@@ -1,21 +1,19 @@
-import os
-import sqlite3
+from logging import getLogger, DEBUG, FileHandler, Formatter
 from disnake.ext import commands
 from dotenv import load_dotenv
-import logging
+from os import getenv
+from sqlite3 import connect
 
 # env's
 load_dotenv()
-OWNER = int(os.getenv("OWNER"))
-MY_GUILD = int(os.getenv("GUILD"))
+OWNER = int(getenv("OWNER"))
+MY_GUILD = int(getenv("GUILD"))
 
 # logging
-logger = logging.getLogger("disnake")
-logger.setLevel(logging.DEBUG)
-handler = logging.FileHandler(filename="disnake.log", encoding="utf-8", mode="w")
-handler.setFormatter(
-    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
-)
+logger = getLogger("disnake")
+logger.setLevel(DEBUG)
+handler = FileHandler(filename="disnake.log", encoding="utf-8", mode="w")
+handler.setFormatter(Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
 logger.addHandler(handler)
 
 # sets up the bot, sets me as owner, and sends the commands out to the my guild
@@ -23,7 +21,7 @@ bot = commands.InteractionBot(owner_id=OWNER, test_guilds=[MY_GUILD], reload=Tru
 
 
 # check for table and create table if it doesn't exist
-con = sqlite3.connect("database.db")
+con = connect("database.db")
 cur = con.cursor()
 cur.execute(
     "CREATE TABLE IF NOT EXISTS events(date_and_time timestamp, name text unique, description text, submitter)"
@@ -44,4 +42,4 @@ async def on_ready():
 
 
 # runs the bot with token
-bot.run(os.getenv("TOKEN"))
+bot.run(getenv("TOKEN"))
