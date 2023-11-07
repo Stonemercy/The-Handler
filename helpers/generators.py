@@ -2,54 +2,80 @@ import disnake
 from disnake import TextInputStyle
 import datetime
 
+blue = disnake.Colour.blue()
+green = disnake.Colour.brand_green()
+red = disnake.Colour.brand_red()
+orange = disnake.Colour.orange()
+lighter_grey = disnake.Colour.lighter_grey()
 
-# generator for embeds
-def embed_gen(embed_type: str):
-    if embed_type == "list":
-        embed = disnake.Embed(title="Upcoming events", colour=disnake.Colour.blue())
+
+class Embeds:
+    def __init__(self, event_warning_time: str = None):
+        self.e_w_t = event_warning_time
+        pass
+
+    def list():
+        embed = disnake.Embed(title="Upcoming events", colour=blue)
         return embed
-    elif embed_type == "event_creation":
+
+    def event_create():
         embed = disnake.Embed(
-            title="Event created...",
-            description="You nailed it!",
-            colour=disnake.Colour.green(),
+            title="Event Created...", description="You nailed it!", colour=green
         )
         return embed
-    elif embed_type == "event_hour":
+
+    def weather():
         embed = disnake.Embed(
-            title="ONE HOUR WARNING",
-            description="WATCH OUT PARD",
-            colour=disnake.Colour.brand_red(),
+            title="Weather Watch",
+            description="Here's the latest weather, pard!",
+            colour=lighter_grey,
         )
         return embed
-    elif embed_type == "weather":
+
+    def weather_alert():
         embed = disnake.Embed(
-            title="Daily weather watch",
-            description="Here's the daily forecast for Belfast",
-            colour=disnake.Colour.lighter_grey(),
+            title="Watch out!", description="There's a weather warning!", colour=red
         )
         return embed
-    elif embed_type == "alert":
-        embed = disnake.Embed(
-            title="Watch out, partner!",
-            description="There's a weather warning!",
-            colour=disnake.Colour.brand_red(),
-        )
-        return embed
-    elif embed_type == "MHNow":
+
+    def mhnow():
         embed = disnake.Embed(
             title="Woah!",
             description="The local monsters have migrated!\nTime to cash in on the new population!",
-            colour=disnake.Colour.green(),
+            colour=green,
         )
         return embed
-    elif embed_type == "youtube":
+
+    def youtube():
         embed = disnake.Embed(
-            title="ToonpishCrafts has uploaded a new video",
+            title="Toonpish Crafts has uploaded a new video",
             description="The url and thumbnail have been downloaded and stored (I need to find a way to upload them)",
-            colour=disnake.Colour.green(),
+            colour=green,
         )
         return embed
+
+    class EventWarning:
+        def hour():
+            embed = disnake.Embed(
+                title="Event Warning!", description="1 hour notification!", colour=red
+            )
+            return embed
+
+        def day():
+            embed = disnake.Embed(
+                title="Event Warning!",
+                description="1 day notification!",
+                colour=orange,
+            )
+            return embed
+
+        def week():
+            embed = disnake.Embed(
+                title="Event Warning!",
+                description="1 week notification!",
+                colour=orange,
+            )
+            return embed
 
 
 def modal_gen(modal_type: str):

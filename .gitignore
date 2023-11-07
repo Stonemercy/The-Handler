@@ -1,8 +1,8 @@
 
 .env
+*.pyc
 *.db
 *.log
-youtube/link.txt
-youtube/thumbnail.jpg
-__pycache__/
 *.code-workspace
+youtube/
+cogs/_pycache__/

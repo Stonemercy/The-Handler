@@ -1,6 +1,5 @@
 import os
 import sqlite3
-from helpers.generators import embed_gen, WeatherEmojis
 from disnake.ext import commands
 from dotenv import load_dotenv
 import logging
@@ -27,7 +26,7 @@ bot = commands.InteractionBot(owner_id=OWNER, test_guilds=[MY_GUILD], reload=Tru
 con = sqlite3.connect("database.db")
 cur = con.cursor()
 cur.execute(
-    "CREATE TABLE IF NOT EXISTS events(date_and_time timestamp, name text unique, description text)"
+    "CREATE TABLE IF NOT EXISTS events(date_and_time timestamp, name text unique, description text, submitter)"
 )
 cur.execute("CREATE TABLE IF NOT EXISTS youtube(video_id)")
 con.commit()
