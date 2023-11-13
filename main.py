@@ -2,7 +2,9 @@ from logging import getLogger, DEBUG, FileHandler, Formatter
 from disnake.ext import commands
 from dotenv import load_dotenv
 from os import getenv
-from sqlite3 import connect
+from data.db import db_startup
+
+# from data.migrate import migrate
 
 # env's
 load_dotenv()
@@ -16,18 +18,8 @@ handler = FileHandler(filename="disnake.log", encoding="utf-8", mode="w")
 handler.setFormatter(Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
 logger.addHandler(handler)
 
-# sets up the bot, sets me as owner, and sends the commands out to the my guild
+# sets up the bot, sets me as owner, and sends the commands out to my guild
 bot = commands.InteractionBot(owner_id=OWNER, test_guilds=[MY_GUILD], reload=True)
-
-
-# check for table and create table if it doesn't exist
-con = connect("database.db")
-cur = con.cursor()
-cur.execute(
-    "CREATE TABLE IF NOT EXISTS events(date_and_time timestamp, name text unique, description text, submitter)"
-)
-cur.execute("CREATE TABLE IF NOT EXISTS youtube(video_id)")
-con.commit()
 
 # load cogs
 bot.load_extensions("cogs")
@@ -37,6 +29,8 @@ bot.load_extensions("cogs")
 @bot.event
 async def on_ready():
     print("===============================")
+    # await migrate()
+    await db_startup()
     print(f"{bot.user.name} is awake and ready for action!")
     print("===============================")
 

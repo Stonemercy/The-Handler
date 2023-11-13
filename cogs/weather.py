@@ -2,9 +2,8 @@ from disnake.ext import commands, tasks
 from helpers.generators import Embeds
 from datetime import datetime
 from pyowm.owm import OWM
-from helpers.generators import WeatherEmojis
 from os import getenv
-from random import random
+from random import Random
 from asyncio import sleep
 from disnake import AppCmdInter
 
@@ -32,14 +31,14 @@ class Weather(commands.Cog):
     @tasks.loop(minutes=1)
     async def weather_info(self):
         now = datetime.now()
-        if now.minute != 0 or now.hour not in range(6, 9, 12, 15, 18):
+        if now.minute != 0 or now.hour not in [6, 9, 12, 15, 18]:
             return
         channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
             int(getenv("CHANNEL"))
         )
         embeds = []
         embed = Embeds.weather()
-        random_num = random() * 10000
+        random_num = Random().random() * 10000
         if random_num == 10000:
             embed.set_image(
                 "https://media0.giphy.com/media/J5q4qtKqQ4plPl4YJN/giphy.gif"
@@ -61,8 +60,8 @@ class Weather(commands.Cog):
                 alert_embed = Embeds.weather_alert()
                 alert_embed.add_field("Alert from:", i.sender, inline=False).add_field(
                     "Alert name:", i.title, inline=False
-                ).add_field("Time start:", i.start).add_field(
-                    "Time end:", i.end
+                ).add_field("Time start:", datetime.fromtimestamp(i.start)).add_field(
+                    "Time end:", datetime.fromtimestamp(i.end)
                 ).add_field(
                     "Description:", i.description, inline=False
                 )
@@ -82,9 +81,8 @@ class Weather(commands.Cog):
             time = datetime.fromisoformat(
                 str(hour.reference_time(timeformat="iso"))
             ).strftime("%H:%M")
-            emoji = WeatherEmojis(hour.status)
             embed.add_field(
-                f"{time} - {hour.detailed_status.title()} {emoji}",
+                f"{time} - {hour.detailed_status.title()}",
                 f"Temp: {hour.temperature('celsius')['temp']:.0f}°\n"
                 f"Feels like: {hour.temperature('celsius')['feels_like']:.0f}°\n"
                 f"Humidity: {hour.humidity}%\n"
@@ -92,8 +90,8 @@ class Weather(commands.Cog):
                 f"Windspeed: {hour.wind()['speed']:.0f}mph\n"
                 f"Cloud coverage: {hour.clouds:}%\n"
                 f"UV Index: {hour.uvi}",
-                inline=False,
             )
+        embed.insert_field_at(2, "\u200b", "\u200b")
         embeds.append(embed)
         await channel.send(embeds=embeds)
 
@@ -103,8 +101,19 @@ class Weather(commands.Cog):
 
     @commands.slash_command(description="Get the next 3 hours of weather")
     async def weather(self, inter: AppCmdInter):
-        embed = Embeds.weather()
         embeds = []
+        embed = Embeds.weather()
+        random_num = Random().random() * 10000
+        if random_num == 10000:
+            embed.set_image(
+                "https://media0.giphy.com/media/J5q4qtKqQ4plPl4YJN/giphy.gif"
+            )
+            m_one = await inter.send(embed=embed)
+            await sleep(2)
+            m_two = await inter.send("lol jk")
+            await sleep(2)
+            await inter.channel.delete_messages([m_one, m_two])
+            embed.set_image(None)
         weather_call = weather_mgr.one_call(
             lat=HOME_LAT, lon=HOME_LON, exclude="minutely"
         )
@@ -116,8 +125,8 @@ class Weather(commands.Cog):
                 alert_embed = Embeds.weather_alert()
                 alert_embed.add_field("Alert from:", i.sender, inline=False).add_field(
                     "Alert name:", i.title, inline=False
-                ).add_field("Time start:", i.start).add_field(
-                    "Time end:", i.end
+                ).add_field("Time start:", datetime.fromtimestamp(i.start)).add_field(
+                    "Time end:", datetime.fromtimestamp(i.end)
                 ).add_field(
                     "Description:", i.description, inline=False
                 )
@@ -137,9 +146,8 @@ class Weather(commands.Cog):
             time = datetime.fromisoformat(
                 str(hour.reference_time(timeformat="iso"))
             ).strftime("%H:%M")
-            emoji = WeatherEmojis(hour.status)
             embed.add_field(
-                f"{time} - {hour.detailed_status.title()} {emoji}",
+                f"{time}\n{hour.detailed_status.title()}",
                 f"Temp: {hour.temperature('celsius')['temp']:.0f}°\n"
                 f"Feels like: {hour.temperature('celsius')['feels_like']:.0f}°\n"
                 f"Humidity: {hour.humidity}%\n"
@@ -147,8 +155,8 @@ class Weather(commands.Cog):
                 f"Windspeed: {hour.wind()['speed']:.0f}mph\n"
                 f"Cloud coverage: {hour.clouds:}%\n"
                 f"UV Index: {hour.uvi}",
-                inline=False,
             )
+        embed.insert_field_at(2, "\u200b", "\u200b")
         embeds.append(embed)
         await inter.response.send_message(embeds=embeds)
 

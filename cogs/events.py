@@ -1,9 +1,9 @@
 from disnake import AppCmdInter, ModalInteraction
 from disnake.ext import commands, tasks
-from helpers.generators import modal_gen, Embeds
-from main import con, cur
-from datetime import datetime, timedelta
+from helpers.generators import Embeds, event_report_modal
+from datetime import datetime
 from os import getenv
+from data.db import Events
 
 
 # the entire cog for the invasions command
@@ -18,64 +18,34 @@ class EventsCommand(commands.Cog):
     def cog_unload(self):
         self.event_check.stop()
 
-    async def warning(
-        self,
-        now: datetime,
-        events: list,
-        hour: bool = True,
-        day: bool = False,
-        month: bool = False,
-    ):
-        unit, hour, day, month = "hour", 1, 0, 0
-        if day:
-            unit, hour, day = "day", 0, 1
-        elif month:
-            unit, hour, month = "month", 0, 4
-
-        for event in events:
-            if (
-                now
-                < datetime.fromisoformat(event[0])
-                <= now + timedelta(hours=hour, days=day, weeks=month * 4)
-            ):
-                embed = Embeds.EventWarning.hour()
-                embed.add_field(
-                    f"This event is happening within 1 {unit}:",
-                    f"{event[1]}\n{event[2]}",
-                ).add_field("Submitted by:", await self.bot.fetch_user(event[3]))
-                print(f'Warned for event "{event[1]}"')
-                await self.channel.send(embed=embed)
-
-    def monthly_purge(
-        self, con, cur, now: datetime = datetime.now(), events: list() = []
-    ):
-        for event in events:
-            if datetime.fromisoformat(event[0]) < now - timedelta(weeks=4):
-                cur.execute(
-                    "Delete from events where date_and_time = ? and name = ?",
-                    (event[0], event[1]),
-                )
-                con.commit()
-                print(f'Deleted event "{event[1]}" from the db')
-
-    @tasks.loop(minutes=1)
-    async def event_check(self):
+    async def warning(self, events):
         self.channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
             int(getenv("CHANNEL"))
         )
-        now = datetime.now()
-        all_events = cur.execute("select * from events").fetchall()
-        if all_events != []:
-            await self.warning(now, all_events, hour=True)
-            await self.warning(now, all_events, day=True)
-            await self.warning(now, all_events, month=True)
-            self.monthly_purge(con, cur, now, all_events)
+        for event in events:
+            unit = await Events.warnings(event)
+            if unit is None:
+                continue
+            embed = Embeds.event_warning()
+            submitter = await self.bot.fetch_user(event[3])
+            embed.description = f"This event is happening within 1 {unit}:"
+            embed.add_field(event[1], event[2]).add_field(
+                "Submitted by:", f"{submitter.mention}", inline=False
+            )
+            await self.channel.send(embed=embed)
+
+    @tasks.loop(minutes=1)
+    async def event_check(self):
+        current_events = await Events.all()
+        if current_events != []:
+            await self.warning(current_events)
+            await Events.purge()
 
     @event_check.before_loop
-    async def before_invasions_ping(self):
+    async def before_event_check(self):
         await self.bot.wait_until_ready()
 
-    # events parent command (does nothing)
+    # events parent command
     @commands.slash_command()
     async def events(self, inter: AppCmdInter):
         pass
@@ -84,19 +54,22 @@ class EventsCommand(commands.Cog):
     @events.sub_command(description="List events")
     async def list(self, inter: AppCmdInter):
         embed = Embeds.list()
-        events_in_db = cur.execute(
-            "select * from events order by date_and_time asc"
-        ).fetchall()
+        current_events = await Events.all()
 
-        if events_in_db == []:
+        if current_events == []:
             embed.add_field("Looks like there are no upcoming events, pard.", "")
             await inter.response.send_message(embed=embed)
         else:
-            for i in events_in_db:
-                if datetime.fromisoformat(i[0]) < datetime.now():
+            for event in current_events:
+                if datetime.fromisoformat(event[0]) < datetime.now():
                     continue
-                time = datetime.fromisoformat(i[0]).strftime("%d/%m/%Y - %H:%M")
-                embed.add_field(f"{time} - {i[1]}", f"{i[2]}", inline=False)
+                time = datetime.fromisoformat(event[0]).strftime("%d/%m/%Y - %H:%M")
+                submitter = await inter.guild.fetch_member(event[3])
+                embed.add_field(
+                    f"{time}",
+                    f"**__{event[1]}__**\n**Description:**\n{event[2]}\nSubmitted by {submitter.mention}\n\u200b",
+                    inline=False,
+                )
 
             await inter.response.send_message(embed=embed)
 
@@ -104,10 +77,8 @@ class EventsCommand(commands.Cog):
     @events.sub_command(description="Report an event")
     async def report(inter: AppCmdInter):
         """Submit an event"""
-
-        modal = modal_gen("event")
-
-        await inter.response.send_modal(modal=modal)
+        modal = event_report_modal()
+        await inter.response.send_modal(modal)
 
     # listener for event modal
     @commands.Cog.listener("on_modal_submit")
@@ -117,9 +88,9 @@ class EventsCommand(commands.Cog):
         else:
             embed = Embeds.event_create()
             event_name, event_desc, event_date, event_time = inter.text_values.values()
-            event_check = cur.execute(
-                "Select * from events where name is ?", (event_name,)
-            ).fetchone()
+            if event_desc == "":
+                event_desc = "No description"
+            event_check = await Events.specific(event_name)
             if event_check is not None:
                 await inter.send(
                     "An event with this name has already been reported, pard\nCheck the list!",
@@ -130,16 +101,14 @@ class EventsCommand(commands.Cog):
             event_date_and_time = datetime.combine(
                 datetime.strptime(event_date, "%d/%m/%y"),
                 datetime.time(datetime.strptime(event_time, "%H:%M")),
+            ).replace(second=0)
+            await Events.submit(
+                event_date_and_time,
+                event_name,
+                inter.author.id,
+                event_desc,
             )
-            cur.execute(
-                "Insert or ignore into events values (?, ?, ?, ?)",
-                (event_date_and_time, event_name, event_desc, inter.author.id),
-            )
-            con.commit()
-            event_confirm = cur.execute(
-                "Select * from events where name is ?", (event_name,)
-            ).fetchone()
-
+            event_confirm = await Events.specific(event_name)
             embed.add_field(
                 "Event date and time:",
                 f"{datetime.fromisoformat(event_confirm[0]).strftime('%d/%m/%y - %H:%M')}",
@@ -148,6 +117,16 @@ class EventsCommand(commands.Cog):
                 "Event description:", event_confirm[2], inline=False
             )
             await inter.send(embed=embed)
+
+    # delete command
+    @events.sub_command(description="Delete an event")
+    async def delete(inter: AppCmdInter, event_name: str):
+        """Delete an event"""
+        deleted = await Events.delete(event_name)
+        if not deleted:
+            await inter.response.send_message("Something went wrong")
+        else:
+            await inter.response.send_message(f"Deleted event `{event_name}`")
 
 
 def setup(bot: commands.Bot):

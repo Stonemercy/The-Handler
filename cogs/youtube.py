@@ -1,6 +1,6 @@
 from disnake.ext import commands, tasks
+from data.db import YouTube
 from helpers.generators import Embeds
-from main import cur, con
 from datetime import datetime
 from googleapiclient import discovery
 from os import getenv
@@ -34,20 +34,19 @@ class Youtube(commands.Cog):
             .execute()
         )["items"][0]
         video_id = latest_video["snippet"]["resourceId"]["videoId"]
-        current_id = cur.execute("Select * from youtube").fetchall()
-        if current_id != []:
-            current_id = current_id[0][0]
+        current_id = await YouTube.current_id()
+        current_id = current_id[0]
         if video_id == current_id:
             return
-        launch_time = (
-            youtube.videos().list(part="liveStreamingDetails", id=video_id).execute()
-        )["items"][0]["liveStreamingDetails"]["scheduledStartTime"]
-        launch_from_iso = datetime.fromisoformat(launch_time).strftime("%Y-%m-%d")
-        if self.latest_video != video_id:
+        else:
             print("New youtube upload detected, getting thumbnail and link now")
-            cur.execute("Delete from youtube")
-            cur.execute("Insert into youtube values(?)", (video_id,))
-            con.commit()
+            launch_time = (
+                youtube.videos()
+                .list(part="liveStreamingDetails", id=video_id)
+                .execute()
+            )["items"][0]["liveStreamingDetails"]["scheduledStartTime"]
+            launch_from_iso = datetime.fromisoformat(launch_time).strftime("%Y-%m-%d")
+            await YouTube.new_code(video_id)
             thumbnail = latest_video["snippet"]["thumbnails"]["maxres"]["url"]
             thumbnail_name = launch_from_iso
             res = get(thumbnail, stream=True)
@@ -56,7 +55,7 @@ class Youtube(commands.Cog):
                     copyfileobj(res.raw, f)
                 move(f"{thumbnail_name}.jpg", f"youtube/{thumbnail_name}.jpg")
                 url_file = open("youtube/link.txt", "w")
-                url_file.write(f"https://www.youtube.com/watch?v={self.latest_video}")
+                url_file.write(f"https://www.youtube.com/watch?v={video_id}")
                 url_file.close()
             else:
                 return

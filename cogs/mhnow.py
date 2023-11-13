@@ -8,18 +8,16 @@ from os import getenv
 class MHNow(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.MHNow_spawns.start()
-
-    def cog_load(self):
+        self.mhnow_spawns.start()
         print("MHNow cog has finished loading")
 
     def cog_unload(self):
-        self.MHNow_spawns.stop()
+        self.mhnow_spawns.stop()
 
     @tasks.loop(minutes=1)
-    async def MHNow_spawns(self):
+    async def mhnow_spawns(self):
         now = datetime.now()
-        if now.minute != 0 or now.hour not in [1, 4, 7, 10]:
+        if now.minute != 0 or now.hour not in [2, 5, 8, 11, 14, 17, 20, 23]:
             return
         channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
             int(getenv("CHANNEL"))
@@ -30,8 +28,8 @@ class MHNow(commands.Cog):
         )
         await channel.send(embed=embed)
 
-    @MHNow_spawns.before_loop
-    async def before_weather_info(self):
+    @mhnow_spawns.before_loop
+    async def before_mhnow_spawns(self):
         await self.bot.wait_until_ready()
 
 
