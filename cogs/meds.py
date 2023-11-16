@@ -20,7 +20,7 @@ class MedsCommand(commands.Cog):
     @tasks.loop(minutes=1)
     async def meds(self):
         now = datetime.now()
-        if now.strftime("%H:%M") == "13:00":
+        if now.strftime("%H:%M") == "14:00":
             self.channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
                 int(getenv("CHANNEL"))
             )

@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from os import getenv
 from data.db import db_startup
 
-# from data.migrate import migrate
+# from migrations import migration3
 
 # env's
 load_dotenv()
@@ -29,8 +29,8 @@ bot.load_extensions("cogs")
 @bot.event
 async def on_ready():
     print("===============================")
-    # await migrate()
     await db_startup()
+    # await migration3.migrate()
     print(f"{bot.user.name} is awake and ready for action!")
     print("===============================")
 

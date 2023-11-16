@@ -1,6 +1,6 @@
 from disnake import AppCmdInter, ModalInteraction
 from disnake.ext import commands
-from helpers.generators import gas_report_modal
+from helpers.generators import Modals
 from data.db import Gas
 from datetime import datetime
 
@@ -30,7 +30,7 @@ class GasCommand(commands.Cog):
     # gas subcommand
     @gas.sub_command(description="Report a payment made for gas")
     async def report(self, inter: AppCmdInter):
-        modal = gas_report_modal()
+        modal = Modals.gas()
         await inter.response.send_modal(modal)
 
     # listener for gas modal

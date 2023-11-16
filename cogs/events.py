@@ -1,6 +1,6 @@
 from disnake import AppCmdInter, ModalInteraction
 from disnake.ext import commands, tasks
-from helpers.generators import Embeds, event_report_modal
+from helpers.generators import Embeds, Modals
 from datetime import datetime
 from os import getenv
 from data.db import Events
@@ -18,28 +18,15 @@ class EventsCommand(commands.Cog):
     def cog_unload(self):
         self.event_check.stop()
 
-    async def warning(self, events):
-        self.channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
-            int(getenv("CHANNEL"))
-        )
-        for event in events:
-            unit = await Events.warnings(event)
-            if unit is None:
-                continue
-            embed = Embeds.event_warning()
-            submitter = await self.bot.fetch_user(event[3])
-            embed.description = f"This event is happening within 1 {unit}:"
-            embed.add_field(event[1], event[2]).add_field(
-                "Submitted by:", f"{submitter.mention}", inline=False
-            )
-            await self.channel.send(embed=embed)
-
     @tasks.loop(minutes=1)
     async def event_check(self):
-        current_events = await Events.all()
-        if current_events != []:
-            await self.warning(current_events)
-            await Events.purge()
+        channel = self.bot.get_channel(int(getenv("CHANNEL")))
+        embed = await Events.warnings(channel)
+        if not embed:
+            return
+        else:
+            await channel.send(embed=embed)
+        await Events.purge()
 
     @event_check.before_loop
     async def before_event_check(self):
@@ -61,13 +48,15 @@ class EventsCommand(commands.Cog):
             await inter.response.send_message(embed=embed)
         else:
             for event in current_events:
-                if datetime.fromisoformat(event[0]) < datetime.now():
+                time = datetime.fromisoformat(event[0])
+                if time < datetime.now().replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                ):
                     continue
-                time = datetime.fromisoformat(event[0]).strftime("%d/%m/%Y - %H:%M")
                 submitter = await inter.guild.fetch_member(event[3])
                 embed.add_field(
-                    f"{time}",
-                    f"**__{event[1]}__**\n**Description:**\n{event[2]}\nSubmitted by {submitter.mention}\n\u200b",
+                    f"{time.strftime('%d/%m/%y - %H:%M')}",
+                    f"**__{event[1]}__**\n{event[2]}\nSubmitted by {submitter.mention}\n\u200b",
                     inline=False,
                 )
 
@@ -77,7 +66,7 @@ class EventsCommand(commands.Cog):
     @events.sub_command(description="Report an event")
     async def report(inter: AppCmdInter):
         """Submit an event"""
-        modal = event_report_modal()
+        modal = Modals.event()
         await inter.response.send_modal(modal)
 
     # listener for event modal
@@ -87,35 +76,32 @@ class EventsCommand(commands.Cog):
             return
         else:
             embed = Embeds.event_create()
-            event_name, event_desc, event_date, event_time = inter.text_values.values()
+            event_name, event_desc, event_date = inter.text_values.values()
             if event_desc == "":
                 event_desc = "No description"
-            event_check = await Events.specific(event_name)
+            event_date = datetime.strptime(event_date, "%d/%m/%y")
+            event_check = await Events.specific(event_date=event_date)
             if event_check is not None:
-                await inter.send(
-                    "An event with this name has already been reported, pard\nCheck the list!",
+                return await inter.send(
+                    "An event has already been reported for that day, pard\nCheck the list!",
                     ephemeral=True,
-                    delete_after=5.0,
+                    delete_after=15.0,
                 )
-                return
-            event_date_and_time = datetime.combine(
-                datetime.strptime(event_date, "%d/%m/%y"),
-                datetime.time(datetime.strptime(event_time, "%H:%M")),
-            ).replace(second=0)
+
             await Events.submit(
-                event_date_and_time,
+                event_date,
                 event_name,
                 inter.author.id,
                 event_desc,
             )
-            event_confirm = await Events.specific(event_name)
+            event = await Events.specific(event_date=event_date)
             embed.add_field(
-                "Event date and time:",
-                f"{datetime.fromisoformat(event_confirm[0]).strftime('%d/%m/%y - %H:%M')}",
+                "Event date:",
+                event[0],
                 inline=False,
-            ).add_field("Event name:", event_confirm[1], inline=False).add_field(
-                "Event description:", event_confirm[2], inline=False
-            )
+            ).add_field(
+                "Event name:", event[1], inline=False
+            ).add_field("Event description:", event[2], inline=False)
             await inter.send(embed=embed)
 
     # delete command

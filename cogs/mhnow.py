@@ -17,7 +17,7 @@ class MHNow(commands.Cog):
     @tasks.loop(minutes=1)
     async def mhnow_spawns(self):
         now = datetime.now()
-        if now.minute != 0 or now.hour not in [2, 5, 8, 11, 14, 17, 20, 23]:
+        if now.minute != 0 or now.hour not in [0, 3, 6, 9, 12, 15, 18, 21]:
             return
         channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
             int(getenv("CHANNEL"))

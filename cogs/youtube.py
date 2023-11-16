@@ -35,9 +35,10 @@ class Youtube(commands.Cog):
         )["items"][0]
         video_id = latest_video["snippet"]["resourceId"]["videoId"]
         current_id = await YouTube.current_id()
-        current_id = current_id[0]
-        if video_id == current_id:
-            return
+        if current_id is not False:
+            current_id = current_id[0]
+            if video_id == current_id:
+                return
         else:
             print("New youtube upload detected, getting thumbnail and link now")
             launch_time = (

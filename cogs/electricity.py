@@ -1,6 +1,6 @@
 from disnake import AppCmdInter, ModalInteraction
 from disnake.ext import commands
-from helpers.generators import electricity_report_modal
+from helpers.generators import Modals
 from data.db import Electricity
 from datetime import datetime
 
@@ -32,7 +32,7 @@ class ElectricityCommand(commands.Cog):
     # electricity subcommand
     @electricity.sub_command(description="Report a payment made for electricity")
     async def report(self, inter: AppCmdInter):
-        modal = electricity_report_modal()
+        modal = Modals.electricity()
         await inter.response.send_modal(modal)
 
     # listener for electricity modal

@@ -64,86 +64,79 @@ class Embeds:
         return embed
 
 
-def event_report_modal():
-    class EventModal(disnake.ui.Modal):
-        def __init__(self):
-            now = datetime.now()
-            components = [
-                disnake.ui.TextInput(
-                    label="Event name",
-                    placeholder="The event's name",
-                    custom_id="event_name",
-                    max_length=50,
-                ),
-                disnake.ui.TextInput(
-                    label="Event description",
-                    placeholder="Description goes here",
-                    custom_id="event_desc",
-                    style=disnake.TextInputStyle.long,
-                    required=False,
-                ),
-                disnake.ui.TextInput(
-                    label="Date",
-                    value=now.strftime("%d/%m/%y"),
-                    placeholder="07/04/16",
-                    custom_id="event_date",
-                ),
-                disnake.ui.TextInput(
-                    label="Time",
-                    value=now.replace(minute=0, hour=now.hour + 1).strftime("%H:%M"),
-                    placeholder="18:00 (just hours and minutes)",
-                    custom_id="event_time",
-                ),
-            ]
-            super().__init__(
-                title="Submit an event",
-                components=components,
-                custom_id="event_modal",
-            )
+class Modals:
+    def event():
+        class EventModal(disnake.ui.Modal):
+            def __init__(self):
+                now = datetime.now()
+                components = [
+                    disnake.ui.TextInput(
+                        label="Event name",
+                        placeholder="The event's name",
+                        custom_id="event_name",
+                        max_length=50,
+                    ),
+                    disnake.ui.TextInput(
+                        label="Event description",
+                        placeholder="Description goes here",
+                        custom_id="event_desc",
+                        style=disnake.TextInputStyle.long,
+                        required=False,
+                    ),
+                    disnake.ui.TextInput(
+                        label="Date",
+                        value=now.strftime("%d/%m/%y"),
+                        placeholder="07/04/16",
+                        custom_id="event_date",
+                    ),
+                ]
+                super().__init__(
+                    title="Submit an event",
+                    components=components,
+                    custom_id="event_modal",
+                )
 
-    return EventModal()
+        return EventModal()
 
+    def gas():
+        class GasModal(disnake.ui.Modal):
+            def __init__(self):
+                components = [
+                    disnake.ui.TextInput(
+                        label="How much?",
+                        value="49.99",
+                        placeholder="e.g. 49.99",
+                        custom_id="gas_amount",
+                        max_length=5,
+                    ),
+                ]
+                super().__init__(
+                    title="So you spent money on gas...",
+                    components=components,
+                    custom_id="gas_modal",
+                )
 
-def gas_report_modal():
-    class GasModal(disnake.ui.Modal):
-        def __init__(self):
-            components = [
-                disnake.ui.TextInput(
-                    label="How much?",
-                    value="49.99",
-                    placeholder="e.g. 49.99",
-                    custom_id="gas_amount",
-                    max_length=5,
-                ),
-            ]
-            super().__init__(
-                title="So you spent money on gas...",
-                components=components,
-                custom_id="gas_modal",
-            )
+        return GasModal()
 
-    return GasModal()
+    def electricity():
+        class ElectricityModal(disnake.ui.Modal):
+            def __init__(self):
+                components = [
+                    disnake.ui.TextInput(
+                        label="How much?",
+                        value="80",
+                        placeholder="e.g. 80",
+                        custom_id="electricity_amount",
+                        max_length=5,
+                    ),
+                ]
+                super().__init__(
+                    title="So you spent money on electricity...",
+                    components=components,
+                    custom_id="electricity_modal",
+                )
 
-
-def electricity_report_modal():
-    class ElectricityModal(disnake.ui.Modal):
-        def __init__(self):
-            components = [
-                disnake.ui.TextInput(
-                    label="How much?",
-                    value="80",
-                    placeholder="e.g. 80",
-                    custom_id="electricity_amount",
-                    max_length=5,
-                ),
-            ]
-            super().__init__(
-                title="So you spent money on electricity...",
-                components=components,
-                custom_id="electricity_modal",
-            )
-
-    return ElectricityModal()
+        return ElectricityModal()
 
 
 def time_list_gen():

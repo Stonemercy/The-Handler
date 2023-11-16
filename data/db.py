@@ -1,31 +1,49 @@
 from aiosqlite import connect
 from datetime import datetime, timedelta
+from helpers.generators import Embeds
 
 
 async def db_startup():
     async with connect("database.db") as db:
         await db.execute(
-            "CREATE TABLE IF NOT EXISTS events(date_and_time timestamp, name text unique, description text, submitter, one_hour_warn default 'false', one_day_warn default 'false', one_week_warn default 'false')"
+            "CREATE TABLE IF NOT EXISTS events(date timestamp, name text, description text, submitter, day_warn default 'false', week_warn default 'false')"
         )
         await db.execute("CREATE TABLE IF NOT EXISTS youtube(video_id)")
         await db.execute("CREATE TABLE IF NOT EXISTS electricity(date, amount)")
         await db.execute("CREATE TABLE IF NOT EXISTS gas(date, amount)")
+        print(f"{db.total_changes} changes to be made to the database")
         await db.commit()
-        print("Database has been setup")
 
 
 class Events:
     async def all():
         async with connect("database.db") as db:
-            return await db.execute_fetchall("Select * from events")
+            return await db.execute_fetchall("Select * from events order by date asc")
 
-    async def specific(event_name: str):
-        async with connect("database.db") as db:
-            async with db.execute(
-                "Select * from events where name is ?", (event_name,)
-            ) as cursor:
-                result = await cursor.fetchone()
-                return result
+    async def specific(
+        event_name: str = None,
+        event_date: datetime = None,
+    ):
+        if event_name is not None:
+            async with connect("database.db") as db:
+                async with db.execute(
+                    "Select * from events where name is ?", (event_name,)
+                ) as cursor:
+                    result = await cursor.fetchone()
+                    if result is not None:
+                        return result
+                    else:
+                        return None
+        if event_date is not None:
+            async with connect("database.db") as db:
+                async with db.execute(
+                    "Select * from events where date is ?", (event_date,)
+                ) as cursor:
+                    result = await cursor.fetchone()
+                    if result is not None:
+                        return result
+                    else:
+                        return None
 
     async def submit(
         date_and_time: datetime,
@@ -49,7 +67,7 @@ class Events:
             await db.commit()
 
     async def purge():
-        now = datetime.now()
+        now = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         one_month_ago = now - timedelta(weeks=4)
         async with connect("database.db") as db:
             async with db.execute_fetchall("Select * from events") as events:
@@ -57,37 +75,54 @@ class Events:
                     time_from_iso = datetime.fromisoformat(event[0])
                     if one_month_ago < time_from_iso < now:
                         await db.execute(
-                            "Delete from events where date_and_time = ?", (event[0],)
+                            "Delete from events where date = ?", (event[0],)
                         )
                         await db.commit()
 
-    async def warnings(event):
+    async def warnings(channel):
         now = datetime.now()
-        time_from_iso = datetime.fromisoformat(event[0])
+        unit = None
+        embed = Embeds.event_warning()
+        warnings = False
         async with connect("database.db") as db:
-            if now < time_from_iso < now + timedelta(hours=1) and event[4] == "false":
-                await db.execute(
-                    "Update events set one_hour_warn = 'true', one_day_warn = 'true', one_week_warn = 'true' where date_and_time = ?",
-                    (event[0],),
-                )
-                await db.commit()
-                return "hour"
+            all_events = await Events.all()
+            if all_events == []:
+                return False
+            for event in all_events:
+                time_from_iso = datetime.fromisoformat(event[0])
+                if (
+                    now < time_from_iso < now + timedelta(days=1)
+                    and event[5] == "false"
+                ):
+                    await db.execute(
+                        "Update events set day_warn = 'true', week_warn = 'true' where date = ?",
+                        (event[0],),
+                    )
+                    await db.commit()
+                    unit = "day"
+                    warnings = True
 
-            if now < time_from_iso < now + timedelta(days=1) and event[5] == "false":
-                await db.execute(
-                    "Update events set one_day_warn = 'true', one_week_warn = 'true' where date_and_time = ?",
-                    (event[0],),
-                )
-                await db.commit()
-                return "day"
+                if (
+                    now < time_from_iso < now + timedelta(weeks=1)
+                    and event[6] == "false"
+                ):
+                    await db.execute(
+                        "Update events set week_warn = 'true' where date = ?",
+                        (event[0],),
+                    )
+                    await db.commit()
+                    unit = "week"
+                    warnings = True
 
-            if now < time_from_iso < now + timedelta(weeks=1) and event[6] == "false":
-                await db.execute(
-                    "Update events set one_week_warn = 'true' where date_and_time = ?",
-                    (event[0],),
-                )
-                await db.commit()
-                return "week"
+                if unit is None:
+                    continue
+
+                embed.add_field(event[1], event[2])
+            embed.description = f"This event is happening within 1 {unit}:"
+            if warnings:
+                return embed
+            else:
+                return False
 
     async def delete(event):
         async with connect("database.db") as db:
