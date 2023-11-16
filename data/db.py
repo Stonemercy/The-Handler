@@ -57,13 +57,12 @@ class Events:
     ):
         async with connect("database.db") as db:
             await db.execute(
-                "Insert or ignore into events values (?, ?, ?, ?, ?, ?, ?)",
+                "Insert or ignore into events values (?, ?, ?, ?, ?, ?)",
                 (
                     date_and_time,
                     name,
                     description,
                     submitter,
-                    "false",
                     "false",
                     "false",
                 ),
@@ -85,18 +84,18 @@ class Events:
 
     async def warnings(channel):
         now = datetime.now()
-        unit = None
-        embed = Embeds.event_warning()
         warnings = False
+        embeds = []
         async with connect("database.db") as db:
             all_events = await Events.all()
             if all_events == []:
                 return False
             for event in all_events:
+                unit = None
                 time_from_iso = datetime.fromisoformat(event[0])
                 if (
                     now < time_from_iso < now + timedelta(days=1)
-                    and event[5] == "false"
+                    and event[4] == "false"
                 ):
                     await db.execute(
                         "Update events set day_warn = 'true', week_warn = 'true' where date = ?",
@@ -105,11 +104,11 @@ class Events:
                     await db.commit()
                     unit = "day"
                     warnings = True
-
-                if (
+                elif (
                     now < time_from_iso < now + timedelta(weeks=1)
-                    and event[6] == "false"
+                    and event[5] == "false"
                 ):
+                    print("week")
                     await db.execute(
                         "Update events set week_warn = 'true' where date = ?",
                         (event[0],),
@@ -120,11 +119,13 @@ class Events:
 
                 if unit is None:
                     continue
+                embed = Embeds.event_warning()
+                embed.title = datetime.fromisoformat(event[0]).strftime("%d/%m/%y")
+                embed.description = f"{event[1]}\n{event[2]}"
+                embeds.append(embed)
 
-                embed.add_field(event[1], event[2])
-            embed.description = f"This event is happening within 1 {unit}:"
             if warnings:
-                return embed
+                return embeds
             else:
                 return False
 

@@ -21,11 +21,11 @@ class EventsCommand(commands.Cog):
     @tasks.loop(minutes=1)
     async def event_check(self):
         channel = self.bot.get_channel(int(getenv("CHANNEL")))
-        embed = await Events.warnings(channel)
-        if not embed:
-            return
+        embeds = await Events.warnings(channel)
+        if not embeds:
+            pass
         else:
-            await channel.send(embed=embed)
+            await channel.send(content="Upcoming events:", embeds=embeds)
         await Events.purge()
 
     @event_check.before_loop
@@ -55,7 +55,7 @@ class EventsCommand(commands.Cog):
                     continue
                 submitter = await inter.guild.fetch_member(event[3])
                 embed.add_field(
-                    f"{time.strftime('%d/%m/%y - %H:%M')}",
+                    f"{time.strftime('%d/%m/%y')}",
                     f"**__{event[1]}__**\n{event[2]}\nSubmitted by {submitter.mention}\n\u200b",
                     inline=False,
                 )
@@ -97,11 +97,11 @@ class EventsCommand(commands.Cog):
             event = await Events.specific(event_date=event_date)
             embed.add_field(
                 "Event date:",
-                event[0],
+                datetime.fromisoformat(event[0]).strftime("%d/%m/%y"),
                 inline=False,
-            ).add_field(
-                "Event name:", event[1], inline=False
-            ).add_field("Event description:", event[2], inline=False)
+            ).add_field("Event name:", event[1], inline=False).add_field(
+                "Event description:", event[2], inline=False
+            )
             await inter.send(embed=embed)
 
     # delete command
