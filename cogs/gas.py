@@ -13,7 +13,7 @@ class GasCommand(commands.Cog):
     def cog_load(self):
         print("Gas cog has finished loading")
 
-    @commands.slash_command(aliases="gastest")
+    @commands.slash_command()
     async def gas(self, inter: AppCmdInter):
         pass
 

@@ -1,3 +1,4 @@
+from random import random
 from aiosqlite import connect
 from datetime import datetime, timedelta
 from helpers.generators import Embeds
@@ -8,9 +9,12 @@ async def db_startup():
         await db.execute(
             "CREATE TABLE IF NOT EXISTS events(date timestamp, name text, description text, submitter, day_warn default 'false', week_warn default 'false')"
         )
-        await db.execute("CREATE TABLE IF NOT EXISTS youtube(video_id)")
-        await db.execute("CREATE TABLE IF NOT EXISTS electricity(date, amount)")
-        await db.execute("CREATE TABLE IF NOT EXISTS gas(date, amount)")
+        await db.execute("CREATE TABLE IF NOT EXISTS youtube(video_id, text)")
+        await db.execute(
+            "CREATE TABLE IF NOT EXISTS electricity(date timestamp, amount)"
+        )
+        await db.execute("CREATE TABLE IF NOT EXISTS gas(date timestamp, amount)")
+        await db.execute("CREATE TABLE IF NOT EXISTS boke(date timestamp)")
         print(f"{db.total_changes} changes to be made to the database")
         await db.commit()
 
@@ -252,5 +256,19 @@ class YouTube:
     async def new_code(code: str):
         async with connect("database.db") as db:
             await db.execute("Delete from youtube")
-            await db.execute("Insert into youtube values(?)", (code,))
+            await db.execute("Insert into youtube values(?)", (code))
             await db.commit()
+
+
+class Pearl:
+    async def boked():
+        now = datetime.now()
+        async with connect("database.db") as db:
+            await db.execute("Insert into boke values(?)", (now,))
+            await db.commit()
+
+    async def all():
+        async with connect("database.db") as db:
+            select = await db.execute("Select * from boke order by date asc")
+            all = await select.fetchall()
+            return all
