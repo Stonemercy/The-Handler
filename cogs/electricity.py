@@ -1,7 +1,7 @@
 from disnake import AppCmdInter, ModalInteraction
 from disnake.ext import commands
 from helpers.generators import Modals
-from data.db import Electricity
+from helpers.db import Electricity
 from datetime import datetime
 
 

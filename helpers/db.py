@@ -1,15 +1,14 @@
-from random import random
 from aiosqlite import connect
 from datetime import datetime, timedelta
 from helpers.generators import Embeds
 
 
 async def db_startup():
-    async with connect("database.db") as db:
+    async with connect("data/database.db") as db:
         await db.execute(
             "CREATE TABLE IF NOT EXISTS events(date timestamp, name text, description text, submitter, day_warn default 'false', week_warn default 'false')"
         )
-        await db.execute("CREATE TABLE IF NOT EXISTS youtube(video_id, text)")
+        await db.execute("CREATE TABLE IF NOT EXISTS youtube(video_id text)")
         await db.execute(
             "CREATE TABLE IF NOT EXISTS electricity(date timestamp, amount)"
         )
@@ -21,7 +20,7 @@ async def db_startup():
 
 class Events:
     async def all():
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             return await db.execute_fetchall("Select * from events order by date asc")
 
     async def specific(
@@ -29,7 +28,7 @@ class Events:
         event_date: datetime = None,
     ):
         if event_name is not None:
-            async with connect("database.db") as db:
+            async with connect("data/database.db") as db:
                 async with db.execute(
                     "Select * from events where name is ?", (event_name,)
                 ) as cursor:
@@ -39,7 +38,7 @@ class Events:
                     else:
                         return None
         if event_date is not None:
-            async with connect("database.db") as db:
+            async with connect("data/database.db") as db:
                 async with db.execute(
                     "Select * from events where date is ?", (event_date,)
                 ) as cursor:
@@ -55,7 +54,7 @@ class Events:
         submitter: int,
         description: str = "No description",
     ):
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             await db.execute(
                 "Insert or ignore into events values (?, ?, ?, ?, ?, ?)",
                 (
@@ -72,7 +71,7 @@ class Events:
     async def purge():
         now = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         one_month_ago = now - timedelta(weeks=4)
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             async with db.execute_fetchall("Select * from events") as events:
                 for event in events:
                     time_from_iso = datetime.fromisoformat(event[0])
@@ -86,7 +85,7 @@ class Events:
         now = datetime.now()
         warnings = False
         embeds = []
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             all_events = await Events.all()
             if all_events == []:
                 return False
@@ -130,7 +129,7 @@ class Events:
                 return False
 
     async def delete(event):
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             async with db.execute(
                 "Select * from events where name = ?", (event,)
             ) as cur:
@@ -157,7 +156,7 @@ class Gas:
         now = datetime.now()
         year = now - timedelta(weeks=52)
         total = 0
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             all = await db.execute("Select * from gas")
             latest = await all.fetchmany(12)
             if latest == []:
@@ -173,7 +172,7 @@ class Gas:
 
     async def report(amount: float | int):
         now = datetime.now()
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             await db.execute("Insert or ignore into gas values(?, ?)", (now, amount))
             await db.commit()
             check = await db.execute("Select * from gas where date = ?", (now,))
@@ -184,7 +183,7 @@ class Gas:
                 return False
 
     async def delete(date: str):
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             grab = await db.execute("Select * from gas")
             fetch = await grab.fetchmany(12)
             for i in fetch:
@@ -202,7 +201,7 @@ class Electricity:
         now = datetime.now()
         year = now - timedelta(weeks=52)
         total = 0
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             all = await db.execute("Select * from electricity")
             latest = await all.fetchmany(12)
             if latest == []:
@@ -218,7 +217,7 @@ class Electricity:
 
     async def report(amount: float | int):
         now = datetime.now()
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             await db.execute(
                 "Insert or ignore into electricity values(?, ?)", (now, amount)
             )
@@ -231,7 +230,7 @@ class Electricity:
                 return False
 
     async def delete(date: str):
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             grab = await db.execute("Select * from electricity")
             fetch = await grab.fetchmany(12)
             for i in fetch:
@@ -246,7 +245,7 @@ class Electricity:
 
 class YouTube:
     async def current_id():
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             all = await db.execute("Select * from youtube")
             current_id = await all.fetchone()
             if current_id is not None:
@@ -255,7 +254,7 @@ class YouTube:
                 return False
 
     async def new_code(code: str):
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             await db.execute("Delete from youtube")
             await db.execute("Insert into youtube values(?)", (code))
             await db.commit()
@@ -264,12 +263,12 @@ class YouTube:
 class Pearl:
     async def boked():
         now = datetime.now()
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             await db.execute("Insert into boke values(?)", (now,))
             await db.commit()
 
     async def all():
-        async with connect("database.db") as db:
+        async with connect("data/database.db") as db:
             select = await db.execute("Select * from boke order by date asc")
             all = await select.fetchall()
             return all

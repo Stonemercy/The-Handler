@@ -3,7 +3,7 @@ from disnake.ext import commands, tasks
 from helpers.generators import Embeds, Modals
 from datetime import datetime
 from os import getenv
-from data.db import Events
+from helpers.db import Events
 
 
 # the entire cog for the invasions command

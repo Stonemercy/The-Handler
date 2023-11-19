@@ -2,19 +2,19 @@ from logging import getLogger, DEBUG, FileHandler, Formatter
 from disnake.ext import commands
 from dotenv import load_dotenv
 from os import getenv
-from data.db import db_startup
+from helpers.db import db_startup
 
 # from migrations import migration3
 
 # env's
-load_dotenv()
+load_dotenv("data/.env")
 OWNER = int(getenv("OWNER"))
 MY_GUILD = int(getenv("GUILD"))
 
 # logging
 logger = getLogger("disnake")
 logger.setLevel(DEBUG)
-handler = FileHandler(filename="disnake.log", encoding="utf-8", mode="w")
+handler = FileHandler(filename="logs/disnake.log", encoding="utf-8", mode="w")
 handler.setFormatter(Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
 logger.addHandler(handler)
 

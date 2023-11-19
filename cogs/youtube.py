@@ -1,5 +1,5 @@
 from disnake.ext import commands, tasks
-from data.db import YouTube
+from helpers.db import YouTube
 from helpers.generators import Embeds
 from datetime import datetime
 from googleapiclient import discovery

@@ -1,6 +1,6 @@
 from disnake import AppCmdInter
 from disnake.ext import commands
-from data.db import Pearl
+from helpers.db import Pearl
 from datetime import datetime
 
 
