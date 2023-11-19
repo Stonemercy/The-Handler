@@ -19,8 +19,9 @@ class BokeCommand(commands.Cog):
         await Pearl.boked()
         await inter.response.send_message("Ah fuck...", delete_after=3.0)
         history = await Pearl.all()
+        inter.send("Boke history:")
         if history == []:
-            return await inter.send("No bokes have been recorded, yay!")
+            return await inter.send("No bokes were recorded... until now")
         content = ""
         last = None
         for i in history:
@@ -29,7 +30,7 @@ class BokeCommand(commands.Cog):
                     f"Record began: {datetime.fromisoformat(i[0]).strftime('%d/%m/%y')}"
                 )
                 last = datetime.fromisoformat(i[0])
-                await inter.send(content=content)
+                return await inter.send(content=content)
             else:
                 next_date = datetime.fromisoformat(i[0])
                 difference = next_date - last

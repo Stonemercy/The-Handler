@@ -68,7 +68,6 @@ class Youtube(commands.Cog):
             embed.add_field(f"Video title: {latest_video['snippet']['title']}", "")
             embed.set_image(thumbnail)
             await channel.send(f"<@{getenv('OWNER')}>", embed=embed)
-            # youtube.close()
 
     @upload_check.before_loop
     async def before_upload_check(self):

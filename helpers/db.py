@@ -107,7 +107,6 @@ class Events:
                     now < time_from_iso < now + timedelta(weeks=1)
                     and event[5] == "false"
                 ):
-                    print("week")
                     await db.execute(
                         "Update events set week_warn = 'true' where date = ?",
                         (event[0],),
@@ -256,7 +255,7 @@ class YouTube:
     async def new_code(code: str):
         async with connect("data/database.db") as db:
             await db.execute("Delete from youtube")
-            await db.execute("Insert into youtube values(?)", (code))
+            await db.execute("Insert into youtube values(?)", (code,))
             await db.commit()
 
 
