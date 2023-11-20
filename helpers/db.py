@@ -243,10 +243,11 @@ class Electricity:
 
 
 class YouTube:
-    async def current_id():
+    async def current_id() -> str:
         async with connect("data/database.db") as db:
             all = await db.execute("Select * from youtube")
             current_id = await all.fetchone()
+            current_id = current_id[0]
             if current_id is not None:
                 return current_id
             else:

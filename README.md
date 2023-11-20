@@ -20,7 +20,7 @@ This bot is initially for my wife and I on a personal discord server but I may d
 
 ## Screenshots (more to come)
 ![Screenshot 1](https://cdn.discordapp.com/attachments/1167244149762830417/1173636141161922570/image.png?ex=6564acd5&is=655237d5&hm=27830d714237bc7872dc8c97da8b48fed589470ac9d29b29db2cb89d01fa8faf&)
-![Screenshot 2](https://cdn.discordapp.com/attachments/1167244149762830417/1171950814936453170/image.png?ex=655e8b40&is=654c1640&hm=7e9fb193e8c57c7eb2bb5b7c2982c963bee3e181de2843510ef07c8324c74c41&)
+![Screenshot 2](https://cdn.discordapp.com/attachments/1167204307578392607/1175828072264634408/image.png?ex=656ca63a&is=655a313a&hm=be3d925441f5716a57bb3061c67a1d82470a0eace74ececf4e0c95c4bfa34731&)
 ![Screenshot 3](https://cdn.discordapp.com/attachments/1167244149762830417/1173642807244750979/image.png?ex=6564b30a&is=65523e0a&hm=c36b65acdf7293b6a04fa108622a3302a87b177e218c0594126e7697e13ce39d&)
 
 
