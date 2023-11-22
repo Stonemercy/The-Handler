@@ -20,6 +20,9 @@ class EventsCommand(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def event_check(self):
+        now = datetime.now()
+        if now.minute != 0 or now.hour not in [9, 12, 17, 21]:
+            return
         channel = self.bot.get_channel(int(getenv("CHANNEL")))
         embeds = await Events.warnings(channel)
         if not embeds:
