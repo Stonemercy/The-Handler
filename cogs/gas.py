@@ -27,7 +27,6 @@ class GasCommand(commands.Cog):
                 f"You have spent £{total_spent} on gas in the last 12 months"
             )
 
-    # gas subcommand
     @gas.sub_command(description="Report a payment made for gas")
     async def report(self, inter: AppCmdInter):
         modal = Modals.gas()
@@ -38,11 +37,16 @@ class GasCommand(commands.Cog):
     async def gas_listener(self, inter: ModalInteraction):
         if inter.custom_id != "gas_modal":
             return
+        if inter.text_values["gas_date"] == "":
+            date = datetime.now()
         else:
-            amount = list(inter.text_values.values())[0]
-            report = await Gas.report(amount)
-            if report:
-                await inter.send(f"Cool, you bought £{amount} worth of gas")
+            date = datetime.strptime(inter.text_values["gas_date"], "%d/%m/%y")
+        amount = inter.text_values["gas_amount"]
+        report = await Gas.report(amount, date)
+        if report:
+            await inter.send(
+                f"Cool, you bought £{amount} worth of gas on {date.strftime('%d/%m/%y')}"
+            )
 
     # delete command
     @gas.sub_command(description="Delete a gas submission")
@@ -54,7 +58,7 @@ class GasCommand(commands.Cog):
         if not deleted:
             await inter.response.send_message("Something went wrong")
         else:
-            await inter.response.send_message(f"Deleted event `{date}`")
+            await inter.response.send_message(f"Deleted gas payment on `{date}`")
 
 
 def setup(bot: commands.Bot):

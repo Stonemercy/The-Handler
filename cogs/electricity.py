@@ -29,7 +29,6 @@ class ElectricityCommand(commands.Cog):
                 f"You have spent £{total_spent:.2f} on electricity in the last 12 months"
             )
 
-    # electricity subcommand
     @electricity.sub_command(description="Report a payment made for electricity")
     async def report(self, inter: AppCmdInter):
         modal = Modals.electricity()
@@ -40,11 +39,16 @@ class ElectricityCommand(commands.Cog):
     async def electricity_listener(self, inter: ModalInteraction):
         if inter.custom_id != "electricity_modal":
             return
+        if inter.text_values["electricity_date"] == "":
+            date = datetime.now()
         else:
-            amount = list(inter.text_values.values())[0]
-            report = await Electricity.report(amount)
-            if report:
-                await inter.send(f"Cool, you bought £{amount} worth of electricity")
+            date = datetime.strptime(inter.text_values["electricity_date"], "%d/%m/%y")
+        amount = inter.text_values["electricity_amount"]
+        report = await Electricity.report(amount, date)
+        if report:
+            await inter.send(
+                f"Cool, you bought £{amount} worth of electricity on {date.strftime('%d/%m/%y')}"
+            )
 
     # delete command
     @electricity.sub_command(description="Delete an electricity submission")

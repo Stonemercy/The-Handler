@@ -99,6 +99,8 @@ class Modals:
         return EventModal()
 
     def gas():
+        now = datetime.now()
+
         class GasModal(disnake.ui.Modal):
             def __init__(self):
                 components = [
@@ -108,6 +110,12 @@ class Modals:
                         placeholder="e.g. 49.99",
                         custom_id="gas_amount",
                         max_length=5,
+                    ),
+                    disnake.ui.TextInput(
+                        label="When?",
+                        placeholder=now.strftime("%d/%m/%y"),
+                        custom_id="gas_date",
+                        required=False,
                     ),
                 ]
                 super().__init__(
@@ -119,6 +127,8 @@ class Modals:
         return GasModal()
 
     def electricity():
+        now = datetime.now()
+
         class ElectricityModal(disnake.ui.Modal):
             def __init__(self):
                 components = [
@@ -128,6 +138,12 @@ class Modals:
                         placeholder="e.g. 80",
                         custom_id="electricity_amount",
                         max_length=5,
+                    ),
+                    disnake.ui.TextInput(
+                        label="When?",
+                        placeholder=now.strftime("%d/%m/%y"),
+                        custom_id="electricity_date",
+                        required=False,
                     ),
                 ]
                 super().__init__(

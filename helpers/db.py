@@ -169,12 +169,11 @@ class Gas:
                     continue
             return round(total, 2)
 
-    async def report(amount: float | int):
-        now = datetime.now()
+    async def report(amount: float | int, date: datetime = datetime.now()):
         async with connect("data/database.db") as db:
-            await db.execute("Insert or ignore into gas values(?, ?)", (now, amount))
+            await db.execute("Insert or ignore into gas values(?, ?)", (date, amount))
             await db.commit()
-            check = await db.execute("Select * from gas where date = ?", (now,))
+            check = await db.execute("Select * from gas where date = ?", (date,))
             found = await check.fetchone()
             if found is not None:
                 return True
@@ -214,14 +213,15 @@ class Electricity:
                     continue
             return round(total, 2)
 
-    async def report(amount: float | int):
-        now = datetime.now()
+    async def report(amount: float | int, date: datetime = datetime.now()):
         async with connect("data/database.db") as db:
             await db.execute(
-                "Insert or ignore into electricity values(?, ?)", (now, amount)
+                "Insert or ignore into electricity values(?, ?)", (date, amount)
             )
             await db.commit()
-            check = await db.execute("Select * from electricity where date = ?", (now,))
+            check = await db.execute(
+                "Select * from electricity where date = ?", (date,)
+            )
             found = await check.fetchone()
             if found is not None:
                 return True
