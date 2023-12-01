@@ -1,13 +1,13 @@
 from disnake.ext import commands, tasks
+from requests import delete
 from helpers.generators import Embeds
 from datetime import datetime
 from pyowm.owm import OWM
 from os import getenv
-from random import Random
+from random import randint
 from asyncio import sleep
 from disnake import AppCmdInter
 
-# sets up the weather stuffs
 # pyOWM docs: https://pyowm.readthedocs.io/en/latest/index.html
 API_KEY = str(getenv("API_KEY"))
 HOME_LAT = float(getenv("HOME_LAT"))
@@ -16,13 +16,10 @@ owm = OWM(API_KEY)
 weather_mgr = owm.weather_manager()
 
 
-# the entire cog for the weather function
 class Weather(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.weather_info.start()
-
-    def cog_load(self):
         print("Weather cog has finished loading")
 
     def cog_unload(self):
@@ -33,22 +30,9 @@ class Weather(commands.Cog):
         now = datetime.now()
         if now.minute != 0 or now.hour not in [6, 9, 12, 15, 18]:
             return
-        channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
-            int(getenv("CHANNEL"))
-        )
+        channel = self.bot.get_channel(int(getenv("CHANNEL")))
         embeds = []
         embed = Embeds.weather()
-        random_num = Random().random() * 10000
-        if random_num == 10000:
-            embed.set_image(
-                "https://media0.giphy.com/media/J5q4qtKqQ4plPl4YJN/giphy.gif"
-            )
-            m_one = await channel.send(embed=embed)
-            await sleep(2)
-            m_two = await channel.send("lol jk")
-            await sleep(2)
-            await channel.delete_messages([m_one, m_two])
-            embed.set_image("")
         weather_call = weather_mgr.one_call(
             lat=HOME_LAT, lon=HOME_LON, exclude="minutely"
         )
@@ -60,36 +44,40 @@ class Weather(commands.Cog):
                 alert_embed = Embeds.weather_alert()
                 alert_embed.add_field("Alert from:", i.sender, inline=False).add_field(
                     "Alert name:", i.title, inline=False
-                ).add_field("Time start:", datetime.fromtimestamp(i.start)).add_field(
-                    "Time end:", datetime.fromtimestamp(i.end)
+                ).add_field(
+                    "Time start:",
+                    f"<t:{i.start}:d>",
+                ).add_field(
+                    "Time end:",
+                    f"<t:{i.end}:d>",
                 ).add_field(
                     "Description:", i.description, inline=False
                 )
             embeds.append(alert_embed)
         embed.add_field(
             "Sunrise:",
-            datetime.fromisoformat(current.sunrise_time(timeformat="iso")).strftime(
-                "%H:%M"
-            ),
+            f"<t:{current.sunrise_time(timeformat='unix')}:t>",
         ).add_field(
             "Sunset:",
-            datetime.fromisoformat(current.sunset_time(timeformat="iso")).strftime(
-                "%H:%M"
-            ),
+            f"<t:{current.sunset_time(timeformat='unix')}:t>",
         )
         for hour in hourly:
-            time = datetime.fromisoformat(
-                str(hour.reference_time(timeformat="iso"))
-            ).strftime("%H:%M")
+            time = f"<t:{hour.reference_time(timeformat='unix')}:t>"
+            if not hour.snow:
+                snow = ""
+            else:
+                snow = f"Snow: `{hour.snow}`\n"
             embed.add_field(
-                f"{time} - {hour.detailed_status.title()}",
-                f"Temp: {hour.temperature('celsius')['temp']:.0f}°\n"
-                f"Feels like: {hour.temperature('celsius')['feels_like']:.0f}°\n"
-                f"Humidity: {hour.humidity}%\n"
-                f"Precipitation: {hour.precipitation_probability:.0%}\n"
-                f"Windspeed: {hour.wind()['speed']:.0f}mph\n"
-                f"Cloud coverage: {hour.clouds:}%\n"
-                f"UV Index: {hour.uvi}",
+                f"{time}\n{hour.detailed_status.title()}",
+                f"Temp: `{hour.temperature('celsius')['temp']:.0f}°`\n"
+                f"Feels like: `{hour.temperature('celsius')['feels_like']:.0f}°`\n"
+                f"Humidity: `{hour.humidity}%`\n"
+                f"Precipitation: `{hour.precipitation_probability:.0%}`\n"
+                f"{snow}"
+                f"Windspeed: `{hour.wind('miles_hour')['speed']:.0f}mph`\n"
+                f"Gusts: `{hour.wind('miles_hour')['gust']:.0f}mph`\n"
+                f"Cloud coverage: `{hour.clouds:}%`\n"
+                f"UV Index: `{hour.uvi}`",
             )
         embed.insert_field_at(2, "\u200b", "\u200b")
         embeds.append(embed)
@@ -103,17 +91,15 @@ class Weather(commands.Cog):
     async def weather(self, inter: AppCmdInter):
         embeds = []
         embed = Embeds.weather()
-        random_num = Random().random() * 10000
+        random_num = randint(1, 10000)
         if random_num == 10000:
             embed.set_image(
                 "https://media0.giphy.com/media/J5q4qtKqQ4plPl4YJN/giphy.gif"
             )
-            m_one = await inter.send(embed=embed)
-            await sleep(2)
-            m_two = await inter.send("lol jk")
-            await sleep(2)
-            await inter.channel.delete_messages([m_one, m_two])
-            embed.set_image(None)
+            await inter.channel.send(embed=embed)
+            await sleep(3)
+            await inter.channel.send("haha, just kidding!")
+            embed.set_image("")
         weather_call = weather_mgr.one_call(
             lat=HOME_LAT, lon=HOME_LON, exclude="minutely"
         )
@@ -125,40 +111,44 @@ class Weather(commands.Cog):
                 alert_embed = Embeds.weather_alert()
                 alert_embed.add_field("Alert from:", i.sender, inline=False).add_field(
                     "Alert name:", i.title, inline=False
-                ).add_field("Time start:", datetime.fromtimestamp(i.start)).add_field(
-                    "Time end:", datetime.fromtimestamp(i.end)
+                ).add_field(
+                    "Time start:",
+                    f"<t:{i.start}:d>",
+                ).add_field(
+                    "Time end:",
+                    f"<t:{i.end}:d>",
                 ).add_field(
                     "Description:", i.description, inline=False
                 )
             embeds.append(alert_embed)
         embed.add_field(
             "Sunrise:",
-            datetime.fromisoformat(current.sunrise_time(timeformat="iso")).strftime(
-                "%H:%M"
-            ),
+            f"<t:{current.sunrise_time(timeformat='unix')}:t>",
         ).add_field(
             "Sunset:",
-            datetime.fromisoformat(current.sunset_time(timeformat="iso")).strftime(
-                "%H:%M"
-            ),
+            f"<t:{current.sunset_time(timeformat='unix')}:t>",
         )
         for hour in hourly:
-            time = datetime.fromisoformat(
-                str(hour.reference_time(timeformat="iso"))
-            ).strftime("%H:%M")
+            time = f"<t:{hour.reference_time(timeformat='unix')}:t>"
+            if not hour.snow:
+                snow = ""
+            else:
+                snow = f"Snow: `{hour.snow}`\n"
             embed.add_field(
                 f"{time}\n{hour.detailed_status.title()}",
-                f"Temp: {hour.temperature('celsius')['temp']:.0f}°\n"
-                f"Feels like: {hour.temperature('celsius')['feels_like']:.0f}°\n"
-                f"Humidity: {hour.humidity}%\n"
-                f"Precipitation: {hour.precipitation_probability:.0%}\n"
-                f"Windspeed: {hour.wind()['speed']:.0f}mph\n"
-                f"Cloud coverage: {hour.clouds:}%\n"
-                f"UV Index: {hour.uvi}",
+                f"Temp: `{hour.temperature('celsius')['temp']:.0f}°`\n"
+                f"Feels like: `{hour.temperature('celsius')['feels_like']:.0f}°`\n"
+                f"Humidity: `{hour.humidity}%`\n"
+                f"Precipitation: `{hour.precipitation_probability:.0%}`\n"
+                f"{snow}"
+                f"Windspeed: `{hour.wind('miles_hour')['speed']:.0f}mph`\n"
+                f"Gusts: `{hour.wind('miles_hour')['gust']:.0f}mph`\n"
+                f"Cloud coverage: `{hour.clouds:}%`\n"
+                f"UV Index: `{hour.uvi}`",
             )
         embed.insert_field_at(2, "\u200b", "\u200b")
         embeds.append(embed)
-        await inter.response.send_message(embeds=embeds)
+        await inter.send(embeds=embeds)
 
 
 def setup(bot: commands.Bot):

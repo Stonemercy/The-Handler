@@ -8,13 +8,10 @@ from requests import get
 from shutil import copyfileobj, move
 
 
-# the entire cog for the YouTube function
 class Youtube(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.upload_check.start()
-
-    def cog_load(self):
         print("Youtube cog has finished loading")
 
     def cog_unload(self):
@@ -25,9 +22,7 @@ class Youtube(commands.Cog):
         now = datetime.now()
         if now.minute not in [0, 15, 30, 45]:
             return
-
         youtube = discovery.build("youtube", "v3", developerKey=getenv("YOUTUBE_KEY"))
-
         latest_video = (
             youtube.playlistItems()
             .list(part="snippet", playlistId="UUhBCrfYgpz-e0N0zDgQcTLA", maxResults=1)
@@ -39,6 +34,9 @@ class Youtube(commands.Cog):
             return
         else:
             print("New youtube upload detected, getting thumbnail and link now")
+            channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
+                int(getenv("CHANNEL"))
+            )
             launch_time = (
                 youtube.videos()
                 .list(part="liveStreamingDetails", id=video_id)
@@ -46,9 +44,9 @@ class Youtube(commands.Cog):
             )["items"][0]["liveStreamingDetails"]["scheduledStartTime"]
             launch_from_iso = datetime.fromisoformat(launch_time).strftime("%Y-%m-%d")
             await YouTube.new_code(video_id)
-            thumbnail = latest_video["snippet"]["thumbnails"]["maxres"]["url"]
+            thumbnail_url = latest_video["snippet"]["thumbnails"]["maxres"]["url"]
             thumbnail_name = launch_from_iso
-            res = get(thumbnail, stream=True)
+            res = get(thumbnail_url, stream=True)
             if res.status_code == 200:
                 with open(f"{thumbnail_name}.jpg", "wb") as f:
                     copyfileobj(res.raw, f)
@@ -57,14 +55,14 @@ class Youtube(commands.Cog):
                 url_file.write(f"https://www.youtube.com/watch?v={video_id}")
                 url_file.close()
             else:
-                return
+                channel.send("I had trouble getting the thumbnail")
 
-            channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
-                int(getenv("CHANNEL"))
-            )
             embed = Embeds.youtube()
-            embed.add_field(f"Video title: {latest_video['snippet']['title']}", "")
-            embed.set_image(thumbnail)
+            embed.add_field(
+                f"Video title:",
+                f"[{latest_video['snippet']['title']}](https://www.youtube.com/watch?v={video_id})",
+            )
+            embed.set_image(thumbnail_url)
             await channel.send(f"<@{getenv('OWNER')}>", embed=embed)
 
     @upload_check.before_loop

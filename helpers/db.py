@@ -69,13 +69,12 @@ class Events:
             await db.commit()
 
     async def purge():
-        now = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        one_month_ago = now - timedelta(weeks=4)
+        now = datetime.now()
         async with connect("data/database.db") as db:
             async with db.execute_fetchall("Select * from events") as events:
                 for event in events:
                     time_from_iso = datetime.fromisoformat(event[0])
-                    if one_month_ago < time_from_iso < now:
+                    if time_from_iso < now:
                         await db.execute(
                             "Delete from events where date = ?", (event[0],)
                         )
@@ -157,7 +156,7 @@ class Gas:
         total = 0
         async with connect("data/database.db") as db:
             all = await db.execute("Select * from gas")
-            latest = await all.fetchmany(12)
+            latest = await all.fetchmany(18)
             if latest == []:
                 return False
             for i in latest:
@@ -183,7 +182,7 @@ class Gas:
     async def delete(date: str):
         async with connect("data/database.db") as db:
             grab = await db.execute("Select * from gas")
-            fetch = await grab.fetchmany(12)
+            fetch = await grab.fetchmany(18)
             for i in fetch:
                 if datetime.fromisoformat(i[0]).strftime("%d/%m/%y") == date:
                     await db.execute("Delete from gas where date = ?", (i[0],))
@@ -201,7 +200,7 @@ class Electricity:
         total = 0
         async with connect("data/database.db") as db:
             all = await db.execute("Select * from electricity")
-            latest = await all.fetchmany(12)
+            latest = await all.fetchmany(18)
             if latest == []:
                 return False
             for i in latest:
@@ -231,7 +230,7 @@ class Electricity:
     async def delete(date: str):
         async with connect("data/database.db") as db:
             grab = await db.execute("Select * from electricity")
-            fetch = await grab.fetchmany(12)
+            fetch = await grab.fetchmany(18)
             for i in fetch:
                 if datetime.fromisoformat(i[0]).strftime("%d/%m/%y") == date:
                     await db.execute("Delete from electricity where date = ?", (i[0],))

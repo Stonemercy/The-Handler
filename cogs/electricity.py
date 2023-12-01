@@ -5,12 +5,9 @@ from helpers.db import Electricity
 from datetime import datetime
 
 
-# the entire cog for the electricity command
 class ElectricityCommand(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-    def cog_load(self):
         print("Electricity cog has finished loading")
 
     @commands.slash_command()
@@ -31,10 +28,9 @@ class ElectricityCommand(commands.Cog):
 
     @electricity.sub_command(description="Report a payment made for electricity")
     async def report(self, inter: AppCmdInter):
-        modal = Modals.electricity()
+        modal = Modals.ElectricityModal()
         await inter.response.send_modal(modal)
 
-    # listener for electricity modal
     @commands.Cog.listener("on_modal_submit")
     async def electricity_listener(self, inter: ModalInteraction):
         if inter.custom_id != "electricity_modal":
@@ -42,20 +38,30 @@ class ElectricityCommand(commands.Cog):
         if inter.text_values["electricity_date"] == "":
             date = datetime.now()
         else:
-            date = datetime.strptime(inter.text_values["electricity_date"], "%d/%m/%y")
+            try:
+                date = datetime.strptime(
+                    inter.text_values["electricity_date"], "%d/%m/%y"
+                )
+            except ValueError:
+                return await inter.send(
+                    "Looks your date wasnt formatted correctly.\nPlease try again.", ephemeral=True
+                )
         amount = inter.text_values["electricity_amount"]
+        if amount is not int or amount is not float:
+            return await inter.send(
+                "Looks like the amount you spent wasnt a number.\nPlease try again.",
+                ephemeral=True
+            )
         report = await Electricity.report(amount, date)
         if report:
             await inter.send(
-                f"Cool, you bought £{amount} worth of electricity on {date.strftime('%d/%m/%y')}"
+                f"Cool, you bought £{amount} worth of electricity on {date.strftime('%d/%m/%y')}",
             )
 
-    # delete command
     @electricity.sub_command(description="Delete an electricity submission")
     async def delete(
         inter: AppCmdInter, date: str = datetime.now().strftime("%d/%m/%y")
     ):
-        # """Delete an electricity submission"""
         deleted = await Electricity.delete(date)
         if not deleted:
             await inter.response.send_message("Something went wrong")

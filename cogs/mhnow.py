@@ -4,7 +4,6 @@ from datetime import datetime
 from os import getenv
 
 
-# the entire cog for the MHNow function
 class MHNow(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -19,9 +18,7 @@ class MHNow(commands.Cog):
         now = datetime.now()
         if now.minute != 0 or now.hour not in [0, 3, 6, 9, 12, 15, 18, 21]:
             return
-        channel = self.bot.get_guild(int(getenv("GUILD"))).get_channel(
-            int(getenv("CHANNEL"))
-        )
+        channel = self.bot.get_channel(int(getenv("CHANNEL")))
         embed = Embeds.mhnow()
         embed.set_image(
             "https://64.media.tumblr.com/1b024be20ab8a76fda1fce9ab3641540/tumblr_inline_p0tvpnZU0E1t9mqf1_500.gif"

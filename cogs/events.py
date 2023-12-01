@@ -6,13 +6,10 @@ from os import getenv
 from helpers.db import Events
 
 
-# the entire cog for the invasions command
 class EventsCommand(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.event_check.start()
-
-    def cog_load(self):
         print("Events cog has finished loading")
 
     def cog_unload(self):
@@ -28,22 +25,20 @@ class EventsCommand(commands.Cog):
         if not embeds:
             pass
         else:
-            await channel.send(content="Upcoming events:", embeds=embeds)
+            await channel.send(content="# Upcoming events:", embeds=embeds)
         await Events.purge()
 
     @event_check.before_loop
     async def before_event_check(self):
         await self.bot.wait_until_ready()
 
-    # events parent command
     @commands.slash_command()
     async def events(self, inter: AppCmdInter):
         pass
 
-    # events list subcommand
     @events.sub_command(description="List events")
     async def list(self, inter: AppCmdInter):
-        embed = Embeds.list()
+        embed = Embeds.event_list()
         current_events = await Events.all()
 
         if current_events == []:
@@ -52,9 +47,7 @@ class EventsCommand(commands.Cog):
         else:
             for event in current_events:
                 time = datetime.fromisoformat(event[0])
-                if time < datetime.now().replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                ):
+                if time < datetime.now():
                     continue
                 submitter = await inter.guild.fetch_member(event[3])
                 embed.add_field(
@@ -65,14 +58,11 @@ class EventsCommand(commands.Cog):
 
             await inter.response.send_message(embed=embed)
 
-    # event report subcommand
     @events.sub_command(description="Report an event")
     async def report(inter: AppCmdInter):
-        """Submit an event"""
-        modal = Modals.event()
+        modal = Modals.EventModal()
         await inter.response.send_modal(modal)
 
-    # listener for event modal
     @commands.Cog.listener("on_modal_submit")
     async def event_listener(self, inter: ModalInteraction):
         if inter.custom_id != "event_modal":
@@ -82,13 +72,17 @@ class EventsCommand(commands.Cog):
             event_name, event_desc, event_date = inter.text_values.values()
             if event_desc == "":
                 event_desc = "No description"
-            event_date = datetime.strptime(event_date, "%d/%m/%y")
+            try:
+                event_date = datetime.strptime(event_date, "%d/%m/%y")
+            except ValueError:
+                return await inter.send(
+                    "The provided date wasnt in the correct format of **dd/mm/yy**.\nPlease try again."
+                )
             event_check = await Events.specific(event_date=event_date)
             if event_check is not None:
                 return await inter.send(
                     "An event has already been reported for that day, pard\nCheck the list!",
                     ephemeral=True,
-                    delete_after=15.0,
                 )
 
             await Events.submit(
@@ -107,10 +101,8 @@ class EventsCommand(commands.Cog):
             )
             await inter.send(embed=embed)
 
-    # delete command
     @events.sub_command(description="Delete an event")
     async def delete(inter: AppCmdInter, event_name: str):
-        """Delete an event"""
         deleted = await Events.delete(event_name)
         if not deleted:
             await inter.response.send_message("Something went wrong")

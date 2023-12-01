@@ -5,12 +5,9 @@ from helpers.db import Gas
 from datetime import datetime
 
 
-# the entire cog for the energy command
 class GasCommand(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-    def cog_load(self):
         print("Gas cog has finished loading")
 
     @commands.slash_command()
@@ -24,15 +21,14 @@ class GasCommand(commands.Cog):
             await inter.response.send_message("You havent reported any payments")
         else:
             await inter.response.send_message(
-                f"You have spent £{total_spent} on gas in the last 12 months"
+                f"You have spent £{total_spent:.2f} on gas in the last 12 months"
             )
 
     @gas.sub_command(description="Report a payment made for gas")
     async def report(self, inter: AppCmdInter):
-        modal = Modals.gas()
+        modal = Modals.GasModal()
         await inter.response.send_modal(modal)
 
-    # listener for gas modal
     @commands.Cog.listener("on_modal_submit")
     async def gas_listener(self, inter: ModalInteraction):
         if inter.custom_id != "gas_modal":
@@ -40,7 +36,12 @@ class GasCommand(commands.Cog):
         if inter.text_values["gas_date"] == "":
             date = datetime.now()
         else:
-            date = datetime.strptime(inter.text_values["gas_date"], "%d/%m/%y")
+            try:
+                date = datetime.strptime(inter.text_values["gas_date"], "%d/%m/%y")
+            except ValueError:
+                return await inter.send(
+                    "Looks your date wasnt formatted correctly.\nPlease try again."
+                )
         amount = inter.text_values["gas_amount"]
         report = await Gas.report(amount, date)
         if report:
@@ -48,7 +49,6 @@ class GasCommand(commands.Cog):
                 f"Cool, you bought £{amount} worth of gas on {date.strftime('%d/%m/%y')}"
             )
 
-    # delete command
     @gas.sub_command(description="Delete a gas submission")
     async def delete(
         inter: AppCmdInter, date: str = datetime.now().strftime("%d/%m/%y")
