@@ -1,3 +1,4 @@
+from xmlrpc.client import Boolean
 from aiosqlite import connect
 from datetime import datetime, timedelta
 from helpers.generators import Embeds
@@ -266,8 +267,26 @@ class Pearl:
             await db.execute("Insert into boke values(?)", (now,))
             await db.commit()
 
-    async def all():
+    async def didnt_boke(date: str) -> bool:
+        async with connect("data/database.db") as db:
+            grab = await db.execute("Select * from boke")
+            fetch = await grab.fetchmany(18)
+            if fetch != []:
+                for i in fetch:
+                    if datetime.fromisoformat(i[0]).strftime("%d/%m/%y") == date:
+                        await db.execute("Delete from boke where date = ?", (i[0],))
+                        await db.commit()
+                        return True
+                    else:
+                        continue
+            else:
+                return False
+
+    async def all_bokes():
         async with connect("data/database.db") as db:
             select = await db.execute("Select * from boke order by date asc")
             all = await select.fetchall()
-            return all
+            if all:
+                return all
+            else:
+                return False

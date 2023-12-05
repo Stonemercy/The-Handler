@@ -12,23 +12,32 @@ class BokeCommand(commands.Cog):
     @commands.slash_command(description="Report that pearl has boked")
     async def boke(self, inter: AppCmdInter):
         await Pearl.boked()
-        history = await Pearl.all()
-        await inter.send("Boke history:")
-        if history == []:
-            return await inter.send("No bokes were recorded... until now")
+        history = await Pearl.all_bokes()
+        await inter.send("### Boke history:")
+        if not history:
+            return await inter.channel.send("No bokes were recorded... until now")
         content = ""
         last = None
         for i in history:
             date = datetime.fromisoformat(i[0])
             if last is None:
-                content = f"Record began: {date.strftime('%d/%m/%y')}"
                 last = date
-                return await inter.send(content=content)
+                await inter.channel.send(f"Record began: {date.strftime('%d/%m/%y')}")
             else:
                 difference = date - last
                 content += f"\n⬇️\n{difference.days} day(s) of no bokes\n⬇️\nBoked on {date.strftime('%d/%m/%y')}"
                 last = date
-        await inter.send(content=content)
+        await inter.channel.send(content=content)
+
+    @commands.slash_command(description="Delete a boke submission")
+    async def boke_delete(
+        self, inter: AppCmdInter, date: str = datetime.now().strftime("%d/%m/%y")
+    ):
+        deleted = await Pearl.didnt_boke(date)
+        if not deleted:
+            await inter.response.send_message("No reports were found for that date")
+        else:
+            await inter.response.send_message(f"Deleted event `{date}`")
 
 
 def setup(bot: commands.Bot):
