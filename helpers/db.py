@@ -1,6 +1,7 @@
-from xmlrpc.client import Boolean
 from aiosqlite import connect
 from datetime import datetime, timedelta
+
+from requests import delete
 from helpers.generators import Embeds
 
 
@@ -15,7 +16,9 @@ async def db_startup():
         )
         await db.execute("CREATE TABLE IF NOT EXISTS gas(date timestamp, amount)")
         await db.execute("CREATE TABLE IF NOT EXISTS boke(date timestamp)")
-        print(f"{db.total_changes} changes to be made to the database")
+        await db.execute(
+            "CREATE TABLE IF NOT EXISTS mhnow(start_time timestamp, end_time timestamp, event_name, event_desc)"
+        )
         await db.commit()
 
 
@@ -290,3 +293,51 @@ class Pearl:
                 return all
             else:
                 return False
+
+
+class MHNow:
+    async def all():
+        async with connect("data/database.db") as db:
+            all = await db.execute_fetchall(
+                "Select * from mhnow order by start_time asc"
+            )
+            return all if all else False
+
+    async def new_event(
+        start_time: datetime, end_time: datetime, event_name: str, event_desc: str
+    ):
+        async with connect("data/database.db") as db:
+            await db.execute(
+                "Insert into mhnow values (?, ?, ?, ?)",
+                (start_time, end_time, event_name, event_desc),
+            )
+            await db.commit()
+            check_search = await db.execute(
+                "Select * from mhnow where event_name = ?", (event_name,)
+            )
+            check_result = await check_search.fetchone()
+            return check_result if check_result else False
+
+    async def delete_event(event_name: str):
+        async with connect("data/database.db") as db:
+            await db.execute("Delete from mhnow where event_name = ?", (event_name,))
+            await db.commit()
+            check = await db.execute(
+                "Select * from mhnow where event_name = ?", (event_name,)
+            )
+            result = await check.fetchone()
+            return True if result is None else False
+
+    async def delete_old():
+        deleted_list = []
+        async with connect("data/database.db") as db:
+            now = datetime.now()
+            events = await db.execute_fetchall("Select * from mhnow")
+            for i in events:
+                event_time = datetime.fromisoformat(i[1])
+                if event_time < now:
+                    await db.execute("Delete from mhnow where event_name = ?", (i[2],))
+                    await db.commit()
+                    deleted_list.append(i[2])
+                    continue
+            return deleted_list if len(deleted_list) > 0 else False

@@ -55,6 +55,11 @@ class Embeds:
             title="Take your meds now", description="Ping Ping Pong", colour=red
         )
 
+    def mhnow_events():
+        return disnake.Embed(
+            title="Here are the current reported events", description="", color=green
+        )
+
 
 class Modals:
     class EventModal(disnake.ui.Modal):

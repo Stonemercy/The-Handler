@@ -76,7 +76,6 @@ class Weather(commands.Cog):
                 f"{snow}"
                 f"Windspeed: `{hour.wind('miles_hour')['speed']:.0f}mph`\n"
                 f"Gusts: `{hour.wind('miles_hour')['gust']:.0f}mph`\n"
-                f"Cloud coverage: `{hour.clouds:}%`\n"
                 f"UV Index: `{hour.uvi}`",
             )
         embed.insert_field_at(2, "\u200b", "\u200b")
@@ -143,7 +142,6 @@ class Weather(commands.Cog):
                 f"{snow}"
                 f"Windspeed: `{hour.wind('miles_hour')['speed']:.0f}mph`\n"
                 f"Gusts: `{hour.wind('miles_hour')['gust']:.0f}mph`\n"
-                f"Cloud coverage: `{hour.clouds:}%`\n"
                 f"UV Index: `{hour.uvi}`",
             )
         embed.insert_field_at(2, "\u200b", "\u200b")
