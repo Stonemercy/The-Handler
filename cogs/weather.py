@@ -1,3 +1,4 @@
+import math
 from disnake.ext import commands, tasks
 from requests import delete
 from helpers.generators import Embeds
@@ -46,13 +47,25 @@ class Weather(commands.Cog):
                     "Alert name:", i.title, inline=False
                 ).add_field(
                     "Time start:",
-                    f"<t:{i.start}:d>",
+                    f"<t:{i.start}:f>",
                 ).add_field(
                     "Time end:",
-                    f"<t:{i.end}:d>",
+                    f"<t:{i.end}:f>",
                 ).add_field(
-                    "Description:", i.description, inline=False
+                    "Description:", "", inline=False
                 )
+                descriptions = len(i.description) / 1024
+                bottom = 0
+                top = 1024
+                for j in range(math.ceil(descriptions)):
+                    alert_embed.add_field(
+                        "",
+                        i.description[bottom:top],
+                        inline=False,
+                    )
+                    bottom = top
+                    top = top + top
+                    continue
             embeds.append(alert_embed)
         embed.add_field(
             "Sunrise:",
@@ -90,8 +103,7 @@ class Weather(commands.Cog):
     async def weather(self, inter: AppCmdInter):
         embeds = []
         embed = Embeds.weather()
-        random_num = randint(1, 10000)
-        if random_num == 10000:
+        if randint(1, 10000) == 10000:
             embed.set_image(
                 "https://media0.giphy.com/media/J5q4qtKqQ4plPl4YJN/giphy.gif"
             )
@@ -105,20 +117,32 @@ class Weather(commands.Cog):
         alerts = weather_call.national_weather_alerts
         current = weather_call.current
         hourly = weather_call.forecast_hourly[0:3]
-        if alerts is not None:
+        if alerts:
             for i in alerts:
                 alert_embed = Embeds.weather_alert()
                 alert_embed.add_field("Alert from:", i.sender, inline=False).add_field(
                     "Alert name:", i.title, inline=False
                 ).add_field(
                     "Time start:",
-                    f"<t:{i.start}:d>",
+                    f"<t:{i.start}:f>",
                 ).add_field(
                     "Time end:",
-                    f"<t:{i.end}:d>",
+                    f"<t:{i.end}:f>",
                 ).add_field(
-                    "Description:", i.description, inline=False
+                    "Description:", "", inline=False
                 )
+                descriptions = len(i.description) / 1024
+                bottom = 0
+                top = 1024
+                for j in range(math.ceil(descriptions)):
+                    alert_embed.add_field(
+                        "",
+                        i.description[bottom:top],
+                        inline=False,
+                    )
+                    bottom = top
+                    top = top + top
+                    continue
             embeds.append(alert_embed)
         embed.add_field(
             "Sunrise:",

@@ -55,7 +55,7 @@ class Youtube(commands.Cog):
                 url_file.write(f"https://www.youtube.com/watch?v={video_id}")
                 url_file.close()
             else:
-                channel.send("I had trouble getting the thumbnail")
+                await channel.send("I had trouble getting the thumbnail")
 
             embed = Embeds.youtube()
             embed.add_field(

@@ -1,4 +1,4 @@
-from disnake import AppCmdInter
+"""from disnake import AppCmdInter
 from disnake.ext import commands
 from helpers.db import Pearl
 from datetime import datetime
@@ -42,3 +42,4 @@ class BokeCommand(commands.Cog):
 
 def setup(bot: commands.Bot):
     bot.add_cog(BokeCommand(bot))
+"""

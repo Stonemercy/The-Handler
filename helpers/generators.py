@@ -36,12 +36,17 @@ class Embeds:
             title="Watch out!", description="There's a weather warning!", colour=red
         )
 
-    def mhnow():
+    """def mhnow():
         return disnake.Embed(
             title="Woah!",
             description="The local monsters have migrated!\nTime to cash in on the new population!",
             colour=green,
         )
+    
+    def mhnow_events():
+        return disnake.Embed(
+            title="Here are the current reported events", description="", color=green
+        )"""
 
     def youtube():
         return disnake.Embed(
@@ -53,11 +58,6 @@ class Embeds:
     def meds():
         return disnake.Embed(
             title="Take your meds now", description="Ping Ping Pong", colour=red
-        )
-
-    def mhnow_events():
-        return disnake.Embed(
-            title="Here are the current reported events", description="", color=green
         )
 
 
@@ -82,8 +82,12 @@ class Modals:
                 disnake.ui.TextInput(
                     label="Date",
                     value=now.strftime("%d/%m/%y"),
-                    placeholder="07/04/16",
                     custom_id="event_date",
+                ),
+                disnake.ui.TextInput(
+                    label="Time",
+                    value=now.strftime("%H:%M"),
+                    custom_id="event_time",
                 ),
             ]
             super().__init__(

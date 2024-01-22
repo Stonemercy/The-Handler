@@ -2,7 +2,7 @@ from disnake import AppCmdInter
 from disnake.ext import commands, tasks
 from helpers.generators import Embeds
 from helpers.db import MHNow
-from helpers.functions import get_date_format
+from helpers.functions import get_datetime
 from datetime import datetime
 from os import getenv
 
@@ -74,8 +74,8 @@ class MHNowCommand(commands.Cog):
         event_name: str,
         event_desc: str,
     ):
-        start_datetime = get_date_format(start_time)
-        end_datetime = get_date_format(end_time)
+        start_datetime = get_datetime(start_time)
+        end_datetime = get_datetime(end_time)
         new_event = await MHNow.new_event(
             start_datetime, end_datetime, event_name, event_desc
         )
@@ -95,7 +95,7 @@ class MHNowCommand(commands.Cog):
                 )
                 continue
             return await inter.send(
-                """New event created!
+                """New event created!\n
                 Here's the reported events:""",
                 embed=embed,
             )

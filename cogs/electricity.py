@@ -2,6 +2,7 @@ from disnake import AppCmdInter, ModalInteraction
 from disnake.ext import commands
 from helpers.generators import Modals
 from helpers.db import Electricity
+from helpers.functions import get_datetime
 from datetime import datetime
 
 
@@ -14,16 +15,23 @@ class ElectricityCommand(commands.Cog):
     async def electricity(self, inter: AppCmdInter):
         pass
 
-    @electricity.sub_command(
-        description="Get average electricity payments over the last 12 months"
-    )
-    async def year(self, inter: AppCmdInter):
-        total_spent = await Electricity.yearly_average()
+    @electricity.sub_command(description="Check how much we've spent this year")
+    async def year(
+        self,
+        inter: AppCmdInter,
+        year: int = commands.Param(
+            description="The year you want to check", default=datetime.now().year
+        ),
+    ):
+        total_spent = await Electricity.yearly_spend(year)
         if not total_spent:
-            await inter.response.send_message("You havent reported any payments")
+            await inter.send(f"No payments have been reported for {year}")
         else:
             await inter.response.send_message(
-                f"You have spent £{total_spent:.2f} on electricity in the last 12 months"
+                (
+                    f"We have spent £{total_spent} on electricity in {year}\n"
+                    "||This total doesnt include payments that havent been reported||"
+                )
             )
 
     @electricity.sub_command(description="Report a payment made for electricity")
@@ -38,19 +46,18 @@ class ElectricityCommand(commands.Cog):
         if inter.text_values["electricity_date"] == "":
             date = datetime.now()
         else:
-            try:
-                date = datetime.strptime(
-                    inter.text_values["electricity_date"], "%d/%m/%y"
-                )
-            except ValueError:
+            date = get_datetime(inter.text_values["electricity_date"])
+            if not date:
                 return await inter.send(
-                    "Looks your date wasnt formatted correctly.\nPlease try again.", ephemeral=True
+                    "Looks your date wasnt formatted correctly.\nPlease try again.",
+                    ephemeral=True,
                 )
-        amount = inter.text_values["electricity_amount"]
-        if amount is not int or amount is not float:
+        try:
+            amount = int(inter.text_values["electricity_amount"])
+        except ValueError:
             return await inter.send(
                 "Looks like the amount you spent wasnt a number.\nPlease try again.",
-                ephemeral=True
+                ephemeral=True,
             )
         report = await Electricity.report(amount, date)
         if report:
@@ -60,13 +67,20 @@ class ElectricityCommand(commands.Cog):
 
     @electricity.sub_command(description="Delete an electricity submission")
     async def delete(
-        inter: AppCmdInter, date: str = datetime.now().strftime("%d/%m/%y")
+        inter: AppCmdInter,
+        date: str = commands.Param(description="The date to purge of reports"),
     ):
-        deleted = await Electricity.delete(date)
-        if not deleted:
-            await inter.response.send_message("Something went wrong")
+        date_dt = get_datetime(date)
+        if not date_dt:
+            return await inter.send(
+                "Your supplied date wasnt formatted right", ephemeral=True
+            )
         else:
-            await inter.response.send_message(f"Deleted event `{date}`")
+            deleted = await Electricity.delete(date_dt)
+        if not deleted:
+            await inter.send("The date you supplied isn't in the logs", ephemeral=True)
+        else:
+            await inter.send(f"Deleted event `{date}`")
 
 
 def setup(bot: commands.Bot):
