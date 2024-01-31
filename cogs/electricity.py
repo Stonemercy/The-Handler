@@ -11,6 +11,11 @@ class ElectricityCommand(commands.Cog):
         self.bot = bot
         print("Electricity cog has finished loading")
 
+    async def year_autocomp(inter: AppCmdInter, user_input: str):
+        """Quick autocomplete for the electricty year command"""
+        YEARS = ["2023", "2024"]
+        return [year for year in YEARS if user_input in year]
+
     @commands.slash_command()
     async def electricity(self, inter: AppCmdInter):
         pass
@@ -20,7 +25,9 @@ class ElectricityCommand(commands.Cog):
         self,
         inter: AppCmdInter,
         year: int = commands.Param(
-            description="The year you want to check", default=datetime.now().year
+            description="The year you want to check",
+            default=datetime.now().year,
+            autocomp=year_autocomp,
         ),
     ):
         total_spent = await Electricity.yearly_spend(year)
@@ -43,37 +50,56 @@ class ElectricityCommand(commands.Cog):
     async def electricity_listener(self, inter: ModalInteraction):
         if inter.custom_id != "electricity_modal":
             return
-        if inter.text_values["electricity_date"] == "":
-            date = datetime.now()
-        else:
-            date = get_datetime(inter.text_values["electricity_date"])
-            if not date:
-                return await inter.send(
-                    "Looks your date wasnt formatted correctly.\nPlease try again.",
-                    ephemeral=True,
-                )
+        date = get_datetime(inter.text_values["electricity_date"])
+        if not date:
+            return await inter.send(
+                (
+                    "Looks like your date wasn't formatted correctly\n"
+                    "Please try again"
+                ),
+                ephemeral=True,
+            )
         try:
             amount = int(inter.text_values["electricity_amount"])
         except ValueError:
             return await inter.send(
-                "Looks like the amount you spent wasnt a number.\nPlease try again.",
+                (
+                    "Looks like the amount you spent wasnt numerical.\n"
+                    "Please try again."
+                ),
                 ephemeral=True,
             )
         report = await Electricity.report(amount, date)
         if report:
-            await inter.send(
+            return await inter.send(
                 f"Cool, you bought £{amount} worth of electricity on {date.strftime('%d/%m/%y')}",
             )
+        else:
+            return await inter.send("Something went wrong :(", ephemeral=True)
+
+    async def delete_autocomp(inter: AppCmdInter, user_input: str):
+        all_records = await Electricity.all()
+        dates = []
+        for i in all_records:
+            date = get_datetime(i[0])
+            if date not in dates:
+                dates.append(date.strftime("%d/%m/%y"))
+                continue
+            else:
+                continue
+        return [date for date in dates if user_input in date]
 
     @electricity.sub_command(description="Delete an electricity submission")
     async def delete(
         inter: AppCmdInter,
-        date: str = commands.Param(description="The date to purge of reports"),
+        date: str = commands.Param(
+            description="The date to purge of reports", autocomp=delete_autocomp
+        ),
     ):
         date_dt = get_datetime(date)
         if not date_dt:
             return await inter.send(
-                "Your supplied date wasnt formatted right", ephemeral=True
+                "Your supplied date wasnt formatted correctly", ephemeral=True
             )
         else:
             deleted = await Electricity.delete(date_dt)

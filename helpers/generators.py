@@ -133,9 +133,8 @@ class Modals:
                 ),
                 disnake.ui.TextInput(
                     label="When?",
-                    placeholder=now.strftime("%d/%m/%y"),
+                    value=now.strftime("%d/%m/%y"),
                     custom_id="electricity_date",
-                    required=False,
                 ),
             ]
             super().__init__(

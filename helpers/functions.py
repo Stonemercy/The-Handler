@@ -3,15 +3,16 @@ from datetime import datetime
 
 def get_datetime(date: str):
     """Attempts to get a datetime object from a date string in the following formats:
-    :class:`DD/MM/YY HH:MM`
-    :class:`DD/MM/YYYY HH:MM`
+    `DD/MM/YY HH:MM`
+    `DD/MM/YYYY HH:MM`
     :class:`DD/MM/YY`
     :class:`DD/MM/YYYY`
-    :class:`YYYY-MM-DD HH:MM:SS`
+    `YYYY-MM-DD HH:MM:SS`
+    :class:`HH:MM`
 
     Parameters
     ----------
-    date: :class:`str`
+    date: `str`
         The date you want to convert
     """
     for fmt in [
@@ -20,6 +21,7 @@ def get_datetime(date: str):
         "%d/%m/%y",
         "%d/%m/%Y",
         "%Y-%m-%d %H:%M:%S",
+        "%H:%M",
     ]:
         try:
             return datetime.strptime(date, fmt)

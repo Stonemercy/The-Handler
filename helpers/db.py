@@ -68,18 +68,16 @@ class Events:
 
     async def warnings(now):
         embeds = []
-        in_a_day = now + timedelta(days=1)
-        in_a_week = now + timedelta(weeks=1)
         async with connect("data/database.db") as db:
             all_events = await Events.all()
             if not all_events:
                 return False
             for i in all_events:
                 event_date = datetime.combine(
-                    datetime.strptime(i[0], "%d/%m/%Y").date(),
-                    datetime.strptime(i[1], "%H:%M").time(),
+                    get_datetime(i[0]).date(),
+                    get_datetime(i[1]).time(),
                 )
-                if now < event_date < in_a_day and not bool(i[4]):
+                if now < event_date < now + timedelta(days=1) and not bool(i[4]):
                     embed = Embeds.event_warning()
                     embed.title = i[0] + " " + i[1]
                     embed.description = f"# {i[2]}\n{i[3]}"
@@ -89,7 +87,7 @@ class Events:
                         (i[2],),
                     )
                     await db.commit()
-                elif now < event_date < in_a_week and not bool(i[5]):
+                elif now < event_date < now + timedelta(weeks=1) and not bool(i[5]):
                     embed.title = i[0] + " " + i[1]
                     embed.description = f"# {i[2]}\n{i[3]}"
                     embeds.append(embed)
@@ -157,12 +155,21 @@ class Gas:
 
 class Electricity:
     async def all():
+        """Returns an iterable with every Row in the database"""
         async with connect("data/database.db") as db:
             return await db.execute_fetchall(
                 "Select * from electricity order by date asc"
             )
 
     async def yearly_spend(year: int):
+        """This function gets the total spend for the provided year
+
+        Args:
+            year (int): The year to check
+
+        Returns:
+            `int` | `False`
+        """
         total = 0
         async with connect("data/database.db") as db:
             all = await Electricity.all()
@@ -177,7 +184,18 @@ class Electricity:
                     return total
             return total
 
-    async def report(amount: float | int, date: datetime = datetime.now()) -> bool:
+    async def report(amount: float | int, date: datetime) -> bool:
+        """Insert a new payment into the database
+
+        Parameters
+        ----------
+            amount: `float` | `int`
+            date: `datetime`
+
+        Returns
+        ----------
+            bool: True if it worked, False if it didn't
+        """
         async with connect("data/database.db") as db:
             reported = await db.execute_insert(
                 "Insert or ignore into electricity values(?, ?)", (date, amount)
