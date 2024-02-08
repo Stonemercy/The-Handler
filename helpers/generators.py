@@ -145,7 +145,7 @@ class Modals:
 
 
 class WeatherData:
-    def __init__(self, data, max=3):
+    def __init__(self, data, hours: int):
         self.alerts = data.national_weather_alerts
         self.current = data.current
-        self.hourly = data.forecast_hourly[:max]
+        self.hourly = data.forecast_hourly[:hours]

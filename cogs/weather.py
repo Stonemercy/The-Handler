@@ -96,8 +96,8 @@ class Weather(commands.Cog):
     async def before_weather_info(self):
         await self.bot.wait_until_ready()
 
-    @commands.slash_command(description="Get the next 3 hours of weather")
-    async def weather(self, inter: AppCmdInter):
+    @commands.slash_command(description="Get weather for `x` amount of hours")
+    async def weather(self, inter: AppCmdInter, hours: int = 3):
         embeds = []
         embed = Embeds.weather()
         if randint(1, 10000) == 10000:
@@ -111,11 +111,9 @@ class Weather(commands.Cog):
         weather_call = weather_mgr.one_call(
             lat=HOME_LAT, lon=HOME_LON, exclude="minutely"
         )
-        alerts = weather_call.national_weather_alerts
-        current = weather_call.current
-        hourly = weather_call.forecast_hourly[0:3]
-        if alerts:
-            for i in alerts:
+        weather_call = WeatherData(weather_call, hours)
+        if weather_call.alerts:
+            for i in weather_call.alerts:
                 alert_embed = Embeds.weather_alert()
                 alert_embed.add_field("Alert from:", i.sender, inline=False).add_field(
                     "Alert name:", i.title, inline=False
@@ -143,12 +141,12 @@ class Weather(commands.Cog):
             embeds.append(alert_embed)
         embed.add_field(
             "Sunrise:",
-            f"<t:{current.sunrise_time(timeformat='unix')}:t>",
+            f"<t:{weather_call.current.sunrise_time(timeformat='unix')}:t>",
         ).add_field(
             "Sunset:",
-            f"<t:{current.sunset_time(timeformat='unix')}:t>",
+            f"<t:{weather_call.current.sunset_time(timeformat='unix')}:t>",
         )
-        for hour in hourly:
+        for hour in weather_call.hourly:
             time = f"<t:{hour.reference_time(timeformat='unix')}:t>"
             if not hour.snow:
                 snow = ""
