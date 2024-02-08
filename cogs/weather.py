@@ -1,7 +1,6 @@
 import math
 from disnake.ext import commands, tasks
-from requests import delete
-from helpers.generators import Embeds
+from helpers.generators import Embeds, WeatherData
 from datetime import datetime
 from pyowm.owm import OWM
 from os import getenv
@@ -37,11 +36,9 @@ class Weather(commands.Cog):
         weather_call = weather_mgr.one_call(
             lat=HOME_LAT, lon=HOME_LON, exclude="minutely"
         )
-        alerts = weather_call.national_weather_alerts
-        current = weather_call.current
-        hourly = weather_call.forecast_hourly[0:3]
-        if alerts is not None:
-            for i in alerts:
+        weather_data = WeatherData(weather_call)
+        if weather_data.alerts is not None:
+            for i in weather_data.alerts:
                 alert_embed = Embeds.weather_alert()
                 alert_embed.add_field("Alert from:", i.sender, inline=False).add_field(
                     "Alert name:", i.title, inline=False
@@ -69,17 +66,17 @@ class Weather(commands.Cog):
             embeds.append(alert_embed)
         embed.add_field(
             "Sunrise:",
-            f"<t:{current.sunrise_time(timeformat='unix')}:t>",
+            f"<t:{weather_data.current.sunrise_time(timeformat='unix')}:t>",
         ).add_field(
             "Sunset:",
-            f"<t:{current.sunset_time(timeformat='unix')}:t>",
+            f"<t:{weather_data.current.sunset_time(timeformat='unix')}:t>",
         )
-        for hour in hourly:
+        for hour in weather_data.hourly:
             time = f"<t:{hour.reference_time(timeformat='unix')}:t>"
             if not hour.snow:
                 snow = ""
             else:
-                snow = f"Snow: `{hour.snow}`\n"
+                snow = f"Snow: `{hour.snow['1h']}mm/h`\n"
             embed.add_field(
                 f"{time}\n{hour.detailed_status.title()}",
                 f"Temp: `{hour.temperature('celsius')['temp']:.0f}°`\n"
@@ -156,7 +153,7 @@ class Weather(commands.Cog):
             if not hour.snow:
                 snow = ""
             else:
-                snow = f"Snow: `{hour.snow}`\n"
+                snow = f"Snow: `{hour.snow['1h']}mm/h`\n"
             embed.add_field(
                 f"{time}\n{hour.detailed_status.title()}",
                 f"Temp: `{hour.temperature('celsius')['temp']:.0f}°`\n"

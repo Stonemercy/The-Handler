@@ -142,3 +142,10 @@ class Modals:
                 components=components,
                 custom_id="electricity_modal",
             )
+
+
+class WeatherData:
+    def __init__(self, data, max=3):
+        self.alerts = data.national_weather_alerts
+        self.current = data.current
+        self.hourly = data.forecast_hourly[:max]
