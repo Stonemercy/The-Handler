@@ -147,19 +147,28 @@ class Modals:
 
 
 class WeatherData:
+    """Takes a OneCall object and formats it into a list of embeds
+
+    Parameters
+    ----------
+    data: `OneCall`
+        I use pyowm to obtain this
+    hours: `int`
+        How many hours of data you want to get back"""
+
     def __init__(self, data: weather_manager.one_call.OneCall, hours: int):
         self.alerts = data.national_weather_alerts
         self.current = data.current
         self.hourly = data.forecast_hourly[:hours]
+        self.embeds = []
+        self.weather_embed = Embeds.weather()
+        self.alert_embed = Embeds.weather_alert()
 
-    def add_weather_alerts(
-        self, alert_embed: disnake.Embed, embeds_list: list
-    ) -> disnake.Embed:
         if self.alerts is not None:
             for i in self.alerts:
-                alert_embed.add_field("Alert from:", i.sender, inline=False).add_field(
-                    "Alert name:", i.title, inline=False
-                ).add_field(
+                self.alert_embed.add_field(
+                    "Alert from:", i.sender, inline=False
+                ).add_field("Alert name:", i.title, inline=False).add_field(
                     "Time start:",
                     f"<t:{i.start}:f>",
                 ).add_field(
@@ -172,7 +181,7 @@ class WeatherData:
                 bottom = 0
                 top = 1024
                 for j in range(math.ceil(descriptions)):
-                    alert_embed.add_field(
+                    self.alert_embed.add_field(
                         "",
                         i.description[bottom:top],
                         inline=False,
@@ -180,10 +189,9 @@ class WeatherData:
                     bottom = top
                     top = top + top
                     continue
-            embeds_list.append(alert_embed)
+                self.embeds.append(self.alert_embed)
 
-    def add_suns(self, embed: disnake.Embed) -> disnake.Embed:
-        embed.add_field(
+        self.weather_embed.add_field(
             "Sunrise:",
             f"<t:{self.current.sunrise_time(timeformat='unix')}:t>",
         ).add_field(
@@ -193,14 +201,13 @@ class WeatherData:
             "\u200b", "\u200b"
         )
 
-    def add_weather(self, embed: disnake.Embed) -> disnake.Embed:
         for hour in self.hourly:
             time = f"<t:{hour.reference_time(timeformat='unix')}:t>"
             if not hour.snow:
                 snow = ""
             else:
                 snow = f"Snow: `{hour.snow['1h']}mm/h`\n"
-            embed.add_field(
+            self.weather_embed.add_field(
                 f"{time}\n{hour.detailed_status.title()}",
                 f"Temp: `{hour.temperature('celsius')['temp']:.0f}°`\n"
                 f"Feels like: `{hour.temperature('celsius')['feels_like']:.0f}°`\n"
@@ -211,3 +218,4 @@ class WeatherData:
                 f"Gusts: `{hour.wind('miles_hour')['gust']:.0f}mph`\n"
                 f"UV Index: `{hour.uvi}`",
             )
+        self.embeds.append(self.weather_embed)
