@@ -154,6 +154,8 @@ class Gas:
 
 
 class Electricity:
+    """How to engage with the Electricity DB"""
+
     async def all():
         """Returns an iterable with every Row in the database"""
         async with connect("data/database.db") as db:

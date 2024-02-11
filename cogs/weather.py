@@ -39,7 +39,16 @@ class Weather(commands.Cog):
         await self.bot.wait_until_ready()
 
     @commands.slash_command(description="Get weather for `x` amount of hours")
-    async def weather(self, inter: AppCmdInter, hours: int = 3):
+    async def weather(
+        self,
+        inter: AppCmdInter,
+        hours: int = commands.Param(
+            lt=22,
+            gt=0,
+            default=3,
+            description="How many hours in the future you want to check",
+        ),
+    ):
         weather_call = weather_mgr.one_call(
             lat=HOME_LAT, lon=HOME_LON, exclude="minutely"
         )

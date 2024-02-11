@@ -161,6 +161,7 @@ class WeatherData:
         self.current = data.current
         self.hourly = data.forecast_hourly[:hours]
         self.embeds = []
+        """The list of embeds for this data set"""
         self.weather_embed = Embeds.weather()
         self.alert_embed = Embeds.weather_alert()
 
