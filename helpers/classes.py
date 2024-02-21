@@ -1,7 +1,8 @@
 from datetime import datetime
 import disnake
 import math
-from pyowm.owm import weather_manager
+from pyowm.owm import OWM
+from os import getenv
 
 blue = disnake.Colour.blue()
 green = disnake.Colour.brand_green()
@@ -11,6 +12,9 @@ lighter_grey = disnake.Colour.lighter_grey()
 
 
 class Embeds:
+    def dashboard_embed():
+        return disnake.Embed(title="Hunter's Log", colour=green)
+
     def event_list():
         return disnake.Embed(title="Upcoming events", colour=blue)
 
@@ -58,9 +62,7 @@ class Embeds:
         )
 
     def meds():
-        return disnake.Embed(
-            title="Take your meds now", description="Ping Ping Pong", colour=red
-        )
+        return disnake.Embed(title="Take your meds now", description="", colour=red)
 
 
 class Modals:
@@ -104,16 +106,15 @@ class Modals:
             components = [
                 disnake.ui.TextInput(
                     label="How much?",
-                    value="49.99",
+                    value="49",
                     placeholder="e.g. 49.99",
                     custom_id="gas_amount",
                     max_length=5,
                 ),
                 disnake.ui.TextInput(
                     label="When?",
-                    placeholder=now.strftime("%d/%m/%y"),
+                    value=now.strftime("%d/%m/%y"),
                     custom_id="gas_date",
-                    required=False,
                 ),
             ]
             super().__init__(
@@ -147,7 +148,7 @@ class Modals:
 
 
 class WeatherData:
-    """Takes a OneCall object and formats it into a list of embeds
+    """Provides embeds based on how many hours are requested
 
     Parameters
     ----------
@@ -156,7 +157,14 @@ class WeatherData:
     hours: `int`
         How many hours of data you want to get back"""
 
-    def __init__(self, data: weather_manager.one_call.OneCall, hours: int):
+    def __init__(self, hours: int):
+        # pyOWM docs: https://pyowm.readthedocs.io/en/latest/index.html
+        API_KEY = str(getenv("API_KEY"))
+        HOME_LAT = float(getenv("HOME_LAT"))
+        HOME_LON = float(getenv("HOME_LON"))
+        owm = OWM(API_KEY)
+        weather_mgr = owm.weather_manager()
+        data = weather_mgr.one_call(lat=HOME_LAT, lon=HOME_LON, exclude="minutely")
         self.alerts = data.national_weather_alerts
         self.current = data.current
         self.hourly = data.forecast_hourly[:hours]

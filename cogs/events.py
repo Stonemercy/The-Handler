@@ -1,7 +1,7 @@
 from disnake import AppCmdInter, ModalInteraction
 from disnake.ext import commands, tasks
 from helpers.functions import get_datetime
-from helpers.generators import Embeds, Modals
+from helpers.classes import Embeds, Modals
 from helpers.db import Events
 from datetime import datetime
 from os import getenv
@@ -68,47 +68,63 @@ class EventsCommand(commands.Cog):
     async def event_listener(self, inter: ModalInteraction):
         if inter.custom_id != "event_modal":
             return
-        else:
-            embed = Embeds.event_create()
-            event_name, event_desc, event_date, event_time = inter.text_values.values()
-            if event_desc == "":
-                event_desc = "No description"
+        embed = Embeds.event_create()
+        event_name, event_desc, event_date, event_time = inter.text_values.values()
+        if event_desc == "":
+            event_desc = "No description"
 
-            event_dt = get_datetime(event_date + " " + event_time)
-            if not event_dt:
-                return await inter.send(
-                    "The provided date or time wasnt in the correct format of **dd/mm/yy** or **HH:MM**.\nPlease try again."
-                )
+        event_dt = get_datetime(event_date + " " + event_time)
+        if not event_dt:
+            return await inter.send(
+                "The provided date or time weren't in the correct format.\nPlease try again.",
+                ephemeral=True,
+            )
+        elif event_dt < datetime.now():
+            return await inter.send("Can't make events for the past", ephemeral=True)
+        event = await Events.submit(
+            event_date,
+            event_time,
+            event_name,
+            inter.author.id,
+            event_desc,
+        )
+        if not event:
+            return await inter.send(
+                f"Something went wrong, let me get my boss\n<@{getenv('OWNER')}>"
+            )
+        embed.add_field(
+            "Event date and time:",
+            event[0] + " " + event[1],
+            inline=False,
+        ).add_field("Event name:", event[2], inline=False).add_field(
+            "Event description:", event[3], inline=False
+        )
+        await inter.send(embed=embed)
 
-            await Events.submit(
-                event_date,
-                event_time,
-                event_name,
-                inter.author.id,
-                event_desc,
-            )
-            event = await Events.specific(event_name)
-            embed.add_field(
-                "Event date and time:",
-                event[0] + " " + event[1],
-                inline=False,
-            ).add_field("Event name:", event[2], inline=False).add_field(
-                "Event description:", event[3], inline=False
-            )
-            await inter.send(embed=embed)
+    async def delete_autocomp(inter: AppCmdInter, user_input: str):
+        all_records = await Events.all()
+        names = []
+        for i in all_records:
+            if i[2] not in names:
+                names.append(i[2])
+                continue
+            else:
+                continue
+        return [date for date in names if user_input in date]
 
     @events.sub_command(description="Delete an event")
     async def delete(
         inter: AppCmdInter,
         event_name: str = commands.Param(
-            description="The name of the event you want to delete"
+            description="The name of the event you want to delete",
+            autocomplete=delete_autocomp,
         ),
     ):
         deleted = await Events.delete(event_name)
         if not deleted:
-            await inter.response.send_message("Something went wrong")
+            await inter.send("Something went wrong", ephemeral=True)
         else:
-            await inter.response.send_message(f"Deleted event `{event_name}`")
+            await inter.send(f"Deleted event `{event_name}`")
 
 
 def setup(bot: commands.Bot):

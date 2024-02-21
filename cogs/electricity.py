@@ -1,6 +1,6 @@
 from disnake import AppCmdInter, ModalInteraction
 from disnake.ext import commands
-from helpers.generators import Modals
+from helpers.classes import Modals
 from helpers.db import Electricity
 from helpers.functions import get_datetime
 from datetime import datetime
@@ -11,14 +11,14 @@ class ElectricityCommand(commands.Cog):
         self.bot = bot
         print("Electricity cog has finished loading")
 
-    async def year_autocomp(inter: AppCmdInter, user_input: str):
-        """Quick autocomplete for the electricty year command"""
-        YEARS = ["2023", "2024"]
-        return [year for year in YEARS if user_input in year]
-
     @commands.slash_command()
     async def electricity(self, inter: AppCmdInter):
         pass
+
+    async def year_autocomp(inter: AppCmdInter, user_input: str):
+        """Quick autocomplete for the electricty year command"""
+        years = await Electricity.years()
+        return [year for year in years if user_input in year]
 
     @electricity.sub_command(description="Check how much we've spent this year")
     async def year(
@@ -59,6 +59,11 @@ class ElectricityCommand(commands.Cog):
                 ),
                 ephemeral=True,
             )
+        elif date > datetime.now():
+            return await inter.send(
+                "Your date can't be in the future",
+                ephemeral=True,
+            )
         try:
             amount = int(inter.text_values["electricity_amount"])
         except ValueError:
@@ -81,9 +86,9 @@ class ElectricityCommand(commands.Cog):
         all_records = await Electricity.all()
         dates = []
         for i in all_records:
-            date = get_datetime(i[0])
+            date = get_datetime(i[0]).strftime("%d/%m/%y")
             if date not in dates:
-                dates.append(date.strftime("%d/%m/%y"))
+                dates.append(date)
                 continue
             else:
                 continue

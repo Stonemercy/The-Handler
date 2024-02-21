@@ -9,11 +9,16 @@ def get_datetime(date: str):
     :class:`DD/MM/YYYY`
     `YYYY-MM-DD HH:MM:SS`
     :class:`HH:MM`
+    `YYYY-MM-DD HH:MM:SS.MS`
 
     Parameters
     ----------
     date: `str`
         The date you want to convert
+
+    Returns
+    ----------
+    `datetime` or `False`
     """
     for fmt in [
         "%d/%m/%y %H:%M",
@@ -22,6 +27,7 @@ def get_datetime(date: str):
         "%d/%m/%Y",
         "%Y-%m-%d %H:%M:%S",
         "%H:%M",
+        "%Y-%m-%d %H:%M:%S.%f",
     ]:
         try:
             return datetime.strptime(date, fmt)

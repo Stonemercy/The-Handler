@@ -1,16 +1,9 @@
 from disnake.ext import commands, tasks
-from helpers.generators import WeatherData
+from helpers.classes import WeatherData
 from datetime import datetime
-from pyowm.owm import OWM
+
 from os import getenv
 from disnake import AppCmdInter
-
-# pyOWM docs: https://pyowm.readthedocs.io/en/latest/index.html
-API_KEY = str(getenv("API_KEY"))
-HOME_LAT = float(getenv("HOME_LAT"))
-HOME_LON = float(getenv("HOME_LON"))
-owm = OWM(API_KEY)
-weather_mgr = owm.weather_manager()
 
 
 class Weather(commands.Cog):
@@ -28,10 +21,8 @@ class Weather(commands.Cog):
         if now.minute != 0 or now.hour not in [6, 9, 12, 15, 18]:
             return
         channel = self.bot.get_channel(int(getenv("CHANNEL")))
-        weather_call = weather_mgr.one_call(
-            lat=HOME_LAT, lon=HOME_LON, exclude="minutely"
-        )
-        weather_data = WeatherData(weather_call, 3)
+
+        weather_data = WeatherData(3)
         await channel.send(embeds=weather_data.embeds)
 
     @weather_info.before_loop
@@ -49,10 +40,7 @@ class Weather(commands.Cog):
             description="How many hours in the future you want to check",
         ),
     ):
-        weather_call = weather_mgr.one_call(
-            lat=HOME_LAT, lon=HOME_LON, exclude="minutely"
-        )
-        weather_data = WeatherData(weather_call, hours)
+        weather_data = WeatherData(hours)
         await inter.send(embeds=weather_data.embeds)
 
 

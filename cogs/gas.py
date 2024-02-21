@@ -1,7 +1,7 @@
 from disnake import AppCmdInter, ModalInteraction
 from disnake.ext import commands
 from helpers.functions import get_datetime
-from helpers.generators import Modals
+from helpers.classes import Modals
 from helpers.db import Gas
 from datetime import datetime
 
@@ -15,14 +15,30 @@ class GasCommand(commands.Cog):
     async def gas(self, inter: AppCmdInter):
         pass
 
-    @gas.sub_command(description="Get average gas payments over the last 12 months")
-    async def year(self, inter: AppCmdInter):
-        total_spent = await Gas.yearly_average()
+    async def year_autocomp(inter: AppCmdInter, user_input: str):
+        """Quick autocomplete for the electricty year command"""
+        years = await Gas.years()
+        return [year for year in years if user_input in year]
+
+    @gas.sub_command(description="Check how much we've spent this year")
+    async def year(
+        self,
+        inter: AppCmdInter,
+        year: int = commands.Param(
+            description="The year you want to check",
+            default=datetime.now().year,
+            autocomp=year_autocomp,
+        ),
+    ):
+        total_spent = await Gas.yearly_spend(year)
         if not total_spent:
-            await inter.response.send_message("You havent reported any payments")
+            await inter.send(f"No payments have been reported for {year}")
         else:
             await inter.response.send_message(
-                f"You have spent £{total_spent:.2f} on gas in the last 12 months"
+                (
+                    f"We have spent £{total_spent} on electricity in {year}\n"
+                    "||This total doesnt include payments that havent been reported||"
+                )
             )
 
     @gas.sub_command(description="Report a payment made for gas")
@@ -34,32 +50,64 @@ class GasCommand(commands.Cog):
     async def gas_listener(self, inter: ModalInteraction):
         if inter.custom_id != "gas_modal":
             return
-        if inter.text_values["gas_date"] == "":
-            date = datetime.now()
-        else:
-            try:
-                date = datetime.strptime(inter.text_values["gas_date"], "%d/%m/%y")
-            except ValueError:
-                return await inter.send(
-                    "Looks your date wasnt formatted correctly.\nPlease try again."
-                )
-        amount = inter.text_values["gas_amount"]
+        date = get_datetime(inter.text_values["gas_date"])
+        if not date:
+            return await inter.send(
+                (
+                    "Looks like your date wasnt formatted correctly.\n"
+                    "Please try again."
+                ),
+                ephemeral=True,
+            )
+        elif date > datetime.now():
+            return await inter.send(
+                "Your date can't be in the future",
+                ephemeral=True,
+            )
+        try:
+            amount = int(inter.text_values["gas_amount"])
+        except ValueError:
+            return await inter.send(
+                (
+                    "Looks like the amount you spent wasnt numerical.\n"
+                    "Please try again."
+                ),
+                ephemeral=True,
+            )
         report = await Gas.report(amount, date)
         if report:
             await inter.send(
                 f"Cool, you bought £{amount} worth of gas on {date.strftime('%d/%m/%y')}"
             )
 
+    async def delete_autocomp(inter: AppCmdInter, user_input: str):
+        all_records = await Gas.all()
+        dates = []
+        for i in all_records:
+            date = get_datetime(i[0]).strftime("%d/%m/%y")
+            if not date:
+                continue
+            if date not in dates:
+                dates.append(date)
+                continue
+            else:
+                continue
+        return [date for date in dates if user_input in date]
+
     @gas.sub_command(description="Delete a gas submission")
     async def delete(
         inter: AppCmdInter,
-        date: str = commands.Param(description="The date to purge of reports"),
+        date: str = commands.Param(
+            description="The date to purge of reports", autocomp=delete_autocomp
+        ),
     ):
-        """Delete an event"""
-        date = get_datetime(date)
-        if not date:
-            return await inter.send("That wasn't a valid date", ephemeral=True)
-        deleted = await Gas.delete(date)
+        date_dt = get_datetime(date)
+        if not date_dt:
+            return await inter.send(
+                "Your supplied date wasnt formatted correctly", ephemeral=True
+            )
+        else:
+            deleted = await Gas.delete(date_dt)
         if not deleted:
             await inter.send("Something went wrong", ephemeral=True)
         else:

@@ -1,5 +1,5 @@
 from disnake.ext import commands, tasks
-from helpers.generators import Embeds
+from helpers.classes import Embeds
 from datetime import datetime
 from os import getenv
 
@@ -15,8 +15,8 @@ class MedsCommand(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def meds(self):
-        now = datetime.now()
-        if now.strftime("%H:%M") == "16:00":
+        now = datetime.now().strftime("%H:%M")
+        if now == "16:00":
             self.channel = self.bot.get_channel(int(getenv("CHANNEL")))
             embed = Embeds.meds()
             await self.channel.send(content=f"<@{getenv('OWNER')}>", embed=embed)
